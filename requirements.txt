@@ -1,0 +1,9 @@
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32
+requests==2.34.2
+pillow==12.3.0
+openpyxl==3.1.5
+python-docx==1.2.0
+pywebview==6.2.1
+tencentcloud-sdk-python-iai==3.1.153

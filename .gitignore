@@ -1,0 +1,33 @@
+# Local configuration, credentials and user data
+.env
+.env.*
+!.env.example
+settings.json
+admin-config.json
+*.pem
+*.p12
+*.pfx
+*.key
+*.db
+*.db-*
+*.sqlite*
+*.log
+*.bak
+*.zip
+user-data/
+resource-packs/
+photos/
+uploads/
+exports/
+# Build and editor outputs
+.venv/
+__pycache__/
+*.py[cod]
+build/
+dist/
+dist_admin/
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

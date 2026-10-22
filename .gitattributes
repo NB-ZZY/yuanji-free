@@ -1,0 +1,10 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sh text eol=lf
+*.command text eol=lf
+*.cmd text eol=crlf
+# Indexed reference sources are verified byte-for-byte on every platform.
+app/data/ref/core-experience/core/*.txt -text whitespace=cr-at-eol
+app/data/nursery_indicators.json -text whitespace=cr-at-eol

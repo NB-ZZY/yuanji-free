@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幼儿观察助手 · 社区版</title>
+<style>
+:root{
+  --bg:#f4f6f5;--card:#fff;--ink:#233;--muted:#7a8a86;--line:#e6ebe9;
+  --g:#5cc2a6;--g2:#e7f6f0;--g3:#3fa88b;--y:#f5b942;--y2:#fff5df;--r:#e5675f;--r2:#fdecea;--b:#5b9be6;--b2:#eaf2fd;
+  --spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.2,.8,.2,1);
+  --radius:16px;--shadow:0 6px 24px rgba(30,60,50,.08);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.6 "PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d5ddda;border-radius:8px}
+
+/* ---- layout ---- */
+#app{display:flex;height:100vh}
+aside{width:210px;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 18px}
+.brand .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--g),#8fd8c2);display:grid;place-items:center;color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(92,194,166,.35)}
+.brand b{font-size:16px}.brand small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:12px;text-align:left;color:#45605a;transition:transform .35s var(--spring),background .2s}
+.nav button:hover{background:#f1f6f4;transform:translateX(3px)}
+.nav button.on{background:var(--g2);color:var(--g3);font-weight:600}
+.nav .ic{width:22px;text-align:center;font-size:17px}
+.spacer{flex:1}
+.who{padding:10px 12px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+.who b{color:var(--ink);display:block}
+main{flex:1;overflow:auto;padding:26px 30px;position:relative}
+.page{display:none;animation:pop .45s var(--spring)}
+.page.on{display:block}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:12px;background:#eef2f1;color:#334;font-weight:500;transition:transform .35s var(--spring),box-shadow .2s,background .2s;white-space:nowrap}
+.btn:hover{transform:translateY(-2px) scale(1.02)}.btn:active{transform:scale(.96);transition-duration:.1s}
+.btn.p{background:var(--g);color:#fff;box-shadow:0 6px 16px rgba(92,194,166,.35)}.btn.p:hover{background:var(--g3)}
+.btn.w{background:var(--y);color:#5a3f00}.btn.d{background:var(--r2);color:var(--r)}.btn.b{background:var(--b2);color:#2b6cc0}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:10px}.btn.xs{padding:3px 9px;font-size:12px;border-radius:8px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---- pills / tags ---- */
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;background:#eef2f1;color:#556}
+.pill.g{background:var(--g2);color:var(--g3)}.pill.y{background:var(--y2);color:#9a6a00}.pill.r{background:var(--r2);color:var(--r)}.pill.b{background:var(--b2);color:#2b6cc0}
+
+/* ---- inputs ---- */
+.inp,textarea.inp,select.inp{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;outline:0;transition:border .2s,box-shadow .2s}
+.inp:focus{border-color:var(--g);box-shadow:0 0 0 4px rgba(92,194,166,.15)}
+textarea.inp{resize:vertical;min-height:90px;line-height:1.7}
+
+/* ---- drop zone ---- */
+.drop{border:2px dashed #cfdad6;border-radius:var(--radius);padding:34px 20px;text-align:center;color:var(--muted);background:#fbfcfc;transition:all .3s var(--spring);cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--g);background:var(--g2);transform:scale(1.01);color:var(--g3)}
+.drop b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+/* ---- students grid ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.stu{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px;text-align:center;cursor:pointer;transition:transform .4s var(--spring),box-shadow .2s,border .2s;position:relative}
+.stu:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:#cfe9df}
+.stu.sel{border-color:var(--g);background:var(--g2)}
+.stu .av{width:64px;height:64px;border-radius:50%;background:#eef2f1;margin:0 auto 8px;overflow:hidden;display:grid;place-items:center;font-size:22px;color:#9aa}
+.stu .av img{width:100%;height:100%;object-fit:cover}
+.stu b{display:block;font-size:15px}.stu small{color:var(--muted);font-size:12px}
+.stu .dot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:#ddd}
+.stu .dot.ok{background:var(--g)}.stu .dot.part{background:var(--y)}
+
+/* ---- photo thumbs ---- */
+.thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.th{width:96px;height:96px;border-radius:12px;overflow:hidden;position:relative;background:#eee;animation:pop .4s var(--spring)}
+.th img{width:100%;height:100%;object-fit:cover}
+.th .x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:12px;display:grid;place-items:center;opacity:0;transition:.2s}
+.th:hover .x{opacity:1}
+.th .st{position:absolute;left:0;right:0;bottom:0;font-size:11px;padding:2px 6px;background:rgba(0,0,0,.45);color:#fff}
+.th.err .st{background:rgba(229,103,95,.85)}
+.modal.album-wide{width:1040px;max-width:94vw}
+.album-scroll{max-height:49vh;overflow:auto;margin:12px 0;padding:2px 4px}
+.album-entry{padding:12px 0;border-top:1px solid var(--line)}
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px;margin-top:9px}
+.album-photo{position:relative;display:block;height:132px;border:2px solid transparent;border-radius:12px;overflow:hidden;background:#eef2f1;cursor:pointer}
+.album-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.album-choice{display:block;height:100%;cursor:inherit}
+.album-photo:hover img{transform:scale(1.06)}
+.album-photo input{position:absolute;top:7px;left:7px;z-index:3;width:17px;height:17px;accent-color:var(--g3)}
+.album-retry{display:none;position:absolute;top:0;right:0;bottom:0;left:0;padding:25px 10px;background:#eef2f1;color:#53665f;font-size:12px;text-align:center;align-items:center;justify-content:center}
+.album-photo.preview-error img{visibility:hidden}
+.album-photo.preview-error .album-retry{display:flex}
+.album-retry:disabled{cursor:wait}
+.album-photo.selected{border-color:var(--g3)}
+.album-photo.used{opacity:.6;cursor:default}
+.album-photo span{position:absolute;bottom:0;left:0;right:0;z-index:2;padding:3px 6px;color:#fff;background:rgba(25,45,38,.6);font-size:12px;text-align:center}
+.album-foot{border-top:1px solid var(--line);padding-top:12px}
+.album-foot progress{width:100%;height:8px;accent-color:var(--g3)}
+
+/* ---- review cards ---- */
+.rev{display:grid;grid-template-columns:260px 1fr;gap:18px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px;animation:pop .5s var(--spring);border:2px solid transparent;transition:border .3s}
+.rev.ok{border-color:#bfe8d8}.rev.pub{opacity:.75}
+.rev .img{border-radius:12px;overflow:hidden;background:#eee;aspect-ratio:4/3}
+.rev .img img{width:100%;height:100%;object-fit:cover;display:block}
+.rev .meta{margin-top:10px;font-size:13px;color:var(--muted)}
+.rev .who{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.rev .who select{max-width:180px}
+.rev .ind{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.rev textarea{min-height:110px}
+.rev .foot{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.rev .cnt{color:var(--muted);font-size:12px;margin-left:auto}
+.rev .warn{background:var(--y2);color:#8a5d00;padding:8px 12px;border-radius:10px;font-size:13px;margin-bottom:10px}
+.rev .bad{background:var(--r2);color:var(--r);padding:8px 12px;border-radius:10px;font-size:13px;margin-bottom:10px}
+
+/* ---- progress ---- */
+.bar{height:8px;background:#e9efed;border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g),#8fd8c2);border-radius:8px;transition:width .5s var(--ease)}
+
+/* ---- modal / toast ---- */
+.mask{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(20,40,35,.35);display:none;place-items:center;z-index:50;backdrop-filter:blur(2px)}
+.mask.on{display:grid}
+.modal{background:#fff;border-radius:20px;padding:26px;width:720px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:pop .5s var(--spring)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#233;color:#fff;padding:10px 18px;border-radius:12px;opacity:0;transition:all .4s var(--spring);z-index:99;pointer-events:none;max-width:80vw}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast.err{background:var(--r)}.toast.ok{background:var(--g3)}
+
+/* ---- steps ---- */
+.steps{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.step{flex:1;min-width:140px;padding:10px 14px;border-radius:12px;background:#fff;border:1.5px solid var(--line);font-size:13px;color:var(--muted);transition:all .35s var(--spring)}
+.step.on{border-color:var(--g);color:var(--g3);font-weight:600;transform:scale(1.03)}
+.step.done{background:var(--g2);border-color:transparent;color:var(--g3)}
+.step .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#eef2f1;margin-right:6px;font-size:12px}
+.step.on .n,.step.done .n{background:var(--g);color:#fff}
+.center{text-align:center}
+.big{font-size:40px;margin-bottom:8px}
+.stat{display:flex;gap:14px}
+.stat .card{flex:1;text-align:center;margin:0}
+.stat b{font-size:26px;color:var(--g3);display:block}
+.hint{font-size:13px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.li{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1.5px solid var(--line);border-radius:12px;transition:transform .35s var(--spring)}
+.li:hover{transform:translateX(3px)}
+kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
+.ai-live{margin:9px 0;padding:9px 12px;background:#f1f7f6;border:1px solid #d6e5e1;border-radius:10px}
+.ai-live progress{display:block;width:100%;height:9px;margin-top:7px;accent-color:#459884}
+.notice-page{max-width:960px;margin:0 auto}
+.notice-heading{display:flex;align-items:center;gap:16px;margin:8px 0 24px;flex-wrap:wrap}
+.notice-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid #dce9e3;border-radius:17px;background:#eaf3ef;color:#497565;flex-shrink:0}
+.notice-icon svg{width:25px;height:25px}.notice-heading h1{font-size:27px;letter-spacing:.02em}.notice-heading p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.notice-card{border:1px solid #e0e7e3;border-radius:20px;padding:30px 34px;margin-bottom:18px;background:#fff;box-shadow:0 8px 28px #24473507;color:#344840}
+.notice-card h3{font-size:23px;font-weight:650;line-height:1.65;margin:15px 0 20px;letter-spacing:.01em;color:#253d33}
+.notice-card p{margin:14px 0;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere}
+.notice-card a{display:inline-flex;align-items:center;gap:8px;margin-top:7px;padding:9px 14px;border:1px solid #d8e6de;border-radius:10px;background:#f7faf8;color:#39745b;text-decoration:none;font-size:14px;transition:background .2s}
+.notice-card a:hover{background:#edf5f0}.notice-label{display:inline-block;background:#edf5f0;color:#4a7963;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:600}
+.notice-empty{padding:64px 24px;text-align:center;color:var(--muted)}.notice-empty b{display:block;color:#456052;font-size:17px;margin-bottom:6px}
+.notice-foot{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;color:var(--muted);font-size:13px;padding:0 3px}
+@media(max-width:740px){.notice-card{padding:22px}.notice-card h3{font-size:20px}.notice-heading h1{font-size:23px}}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.settings-grid>label{display:flex;flex-direction:column;gap:6px;font-size:14px}.settings-grid .inp{width:100%;min-width:0}.settings-wide{grid-column:1/-1}.settings-optional{margin-top:16px;padding:14px 0;border-top:1px solid var(--line)}.settings-optional summary{cursor:pointer;font-weight:600}.settings-optional .hint{line-height:1.8}#resourceFiles{overflow-wrap:anywhere}#communityDataDir{overflow-wrap:anywhere}@media(max-width:740px){.settings-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="brand"><div class="logo">观</div><div><b>幼儿观察助手</b><small id="ver">v0.1</small></div></div>
+    <div class="nav">
+      <button data-p="write" class="on"><span class="ic">✎</span>写观察</button>
+      <button data-p="roster"><span class="ic">☺</span>花名册·人脸</button>
+      <button data-p="history"><span class="ic">▤</span>历史批次</button>
+      <button data-p="settings"><span class="ic">⚙</span>设置</button>
+      <button data-p="notices"><span class="ic">◉</span>通知公告</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="who"><b id="whoName">未登录</b><span id="whoClass">未选择班级</span>
+      <span class="pill g" style="margin-top:6px;align-self:flex-start">社区版 · MIT</span></div>
+  </aside>
+  <main>
+    <section class="page notice-page" id="p-notices" aria-labelledby="noticePageTitle">
+      <div class="notice-heading">
+        <div class="notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1"/></svg></div>
+        <div class="grow"><h1 id="noticePageTitle">通知公告</h1><p>社区版使用说明</p></div>
+
+      </div>
+      <div id="noticeContent" aria-live="polite"></div>
+      <div class="notice-foot"><span>NB-ZZY · MIT 开源许可</span><button class="btn sm" onclick="showConsent(false)">使用须知 ↗</button></div>
+    </section>
+    <!-- ===== 写观察 ===== -->
+    <section class="page on" id="p-write">
+      <div class="row"><h1>写观察</h1><span class="grow"></span><button class="btn" onclick="Knowledge.open()">内置知识库</button></div>
+      <div class="row" style="margin:8px 0 14px;gap:10px"><label class="hint" for="obsThinking">模型思考程度</label>
+        <select class="inp" id="obsThinking" style="width:120px" disabled onchange="ObservationAI.change(this.value)"><option>读取中…</option></select>
+        <span class="hint" id="obsThinkingHint">读取当前模型支持的思考档位…</span></div>
+      <p class="sub">导入今天拍的照片，选择对应的幼儿；<b>要不要让 AI 写、写哪几条指标、发不发给家长，都由你点。</b></p>
+      <div class="card" id="writeNew">
+        <div class="drop" id="dropObs"><b>拖入或点击选择照片</b>一次可以放很多张。<b>一张照片就是一条记录</b>——合影可以关联多个幼儿，每个幼儿可以各选指标；启用自己的人脸识别服务后，也可以自动匹配。作品照、画、搭出来的东西也能传。</div>
+        <div class="row" style="margin-top:10px"><button class="btn b" onclick="Album.open()">从班级相册选照片</button><span class="hint">选好的照片放到下面，仍由你决定何时开始识别。</span></div>
+        <div class="row" style="margin-top:12px;gap:8px">
+          <span class="hint">写成</span>
+          <select class="inp" id="obsMode" style="width:170px">
+            <option value="simple">随手记（发幼师口袋）</option>
+            <option value="table">观察记录表（段落可增删）</option>
+          </select>
+          <span class="hint" id="obsModeTip" style="flex:1">给家长看的一小段话，约 100 字，可一键发布。</span>
+          <span class="hint">篇幅</span>
+          <select class="inp" id="obsLen" style="width:110px">
+            <option value="brief">简要</option>
+            <option value="normal" selected>普通</option>
+            <option value="detail">详细</option>
+          </select>
+        </div>
+        <div style="margin-top:10px">
+          <textarea class="inp" id="obsNote" rows="2" style="width:100%;resize:vertical;line-height:1.6"
+            placeholder="用说话的方式讲今天发生了什么，可以写明幼儿姓名、行为和对话。&#10;程序会把这段话拆开，谁的事写给谁，指标也顺手挑好。不写也行，只是会写得笼统些。"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn w" id="btnBrief" onclick="briefRead()">💬 让 AI 读一读</button>
+            <span class="hint grow" id="briefTip">读一读 = 先看看它听懂了谁、听懂了什么，再决定要不要开始识别。也可以直接开始识别，它会自己读。</span>
+            <label class="hint" style="display:flex;align-items:center;gap:6px">记录日期 <input class="inp" type="date" id="obsDate" style="width:150px"></label>
+            <button class="btn p" id="btnStart" disabled>开始识别</button>
+          </div>
+          <div id="briefCard" style="margin-top:10px"></div>
+        </div>
+        <div class="thumbs" id="obsThumbs" style="margin-top:12px"></div>
+        <input type="file" id="fileObs" multiple accept="image/*" hidden>
+      </div>
+      <div id="batchView"></div>
+    </section>
+
+    <!-- ===== 花名册 ===== -->
+    <section class="page" id="p-roster">
+      <h1>花名册与人脸库</h1>
+      <p class="sub">先同步班级名单即可手动选择幼儿。人脸识别为可选功能，需在设置中配置自己的腾讯云服务并启用，再导入有权使用的照片。</p>
+      <div class="card">
+        <div class="row">
+          <button class="btn" id="btnSync">⟳ 从幼师口袋同步名单</button>
+          <button class="btn w" id="btnHarvest">✨ 从历史记录自动找底照</button>
+          <button class="btn b" id="btnImpExcel">⊞ 用 Excel 导入照片</button>
+          <button class="btn b" id="btnImpFiles">⊟ 整包照片自动归档</button>
+          <button class="btn b" id="btnReview">☑ 复核底照</button>
+          <button class="btn w" id="btnGroup">🧩 从合影里找</button>
+          <button class="btn b" id="btnNick">🏷 挖小名</button>
+          <span class="grow"></span>
+          <span class="hint" id="rosterStat"></span>
+          <button class="btn" id="btnCloudRefresh" title="同班另一位老师刚入完库时点一下">☁ 查云端已有</button>
+          <button class="btn p" id="btnEnroll">↑ 把新照片入库</button>
+        </div>
+        <div id="enrollBar" style="margin-top:12px;display:none"><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:6px"></div></div>
+      </div>
+      <div id="pendingBox"></div>
+      <div class="grid" id="stuGrid"></div>
+    </section>
+
+    <!-- ===== 历史 ===== -->
+    <section class="page" id="p-history">
+      <h1>历史批次</h1><p class="sub">每次上传是一个批次，可以回来继续审核或发布。</p>
+      <div class="list" id="histList"></div>
+      <h2>回收站</h2>
+      <p class="sub">从 1.4.4 起删除的批次和记录可在这里恢复，文字、指标和照片保留在本机。删除和恢复均不影响幼师口袋上的记录。仅主动点击单条「撤回」才会撤回网站记录。</p>
+      <p class="hint">旧版本已删除且未留副本的内容无法直接恢复。请保留误删电脑的数据，检查本机备份或向幼师口袋申请恢复。升级前数据库副本保存在本机数据目录的 recovery-before-1.4.4 文件夹。</p>
+      <div class="list" id="trashList"></div>
+    </section>
+
+    <!-- ===== 设置 ===== -->
+    <section class="page" id="p-settings">
+      <h1>设置</h1><p class="sub">社区版免费使用。先配置自己的模型服务，再登录幼师口袋同步班级；照片也可以手动关联幼儿。</p>
+      <p><a class="btn sm" href="https://github.com/NB-ZZY/kidobs-community/blob/main/docs/teacher-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">第一次使用？查看教师入门教程 ↗</a></p>
+      <div class="card" id="communitySettings"><h2>我的 AI 模型</h2>
+        <p class="hint">请求直接发送到你填写的模型服务。API 密钥保存在本机，读取设置时不会显示原值。</p>
+        <form id="modelConfigForm" onsubmit="event.preventDefault();CommunitySettings.save()">
+          <div class="settings-grid">
+            <label>服务类型<select class="inp" id="cfgProvider"><option value="zhipu">智谱</option><option value="deepseek">DeepSeek</option><option value="openai-compatible">OpenAI 兼容接口</option></select></label>
+            <label>模型名称<input class="inp" id="cfgModel" placeholder="填写服务商提供的模型名称" autocomplete="off"></label>
+            <label class="settings-wide">接口地址（Base URL）<input class="inp" id="cfgBaseUrl" type="url" placeholder="https://你的服务地址/v1" autocomplete="off"></label>
+            <label>API 密钥<input class="inp" id="cfgApiKey" type="password" placeholder="填入自己的 API 密钥" autocomplete="new-password"><span id="cfgApiKeyStatus" class="hint"></span></label>
+            <label>默认思考程度<select class="inp" id="cfgThinking"><option value="default">跟随模型默认</option><option value="off">关闭（模型支持时）</option><option value="low">低</option><option value="high">高</option><option value="max">最高</option></select></label>
+          </div>
+          <label class="hint"><input type="checkbox" id="cfgClearApiKey"> 删除本机已保存的 API 密钥</label>
+          <p class="hint">留空密钥会保留原配置。不同模型支持的图像输入和思考档位不同，请选择适合照片观察任务的模型。</p>
+          <details class="settings-optional"><summary>可选：使用自己的腾讯云人脸识别</summary>
+            <p class="hint">默认关闭；不配置也可以整理照片并手动选人。启用后，需取得相应照片使用权限，并由自己的腾讯云账号承担服务费用。</p>
+            <p><a class="btn sm" href="https://github.com/NB-ZZY/kidobs-community/blob/main/docs/tencent-face-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">腾讯云开通与密钥配置教程 ↗</a></p>
+            <label><input type="checkbox" id="cfgFaceEnabled"> 启用人脸识别</label>
+            <div class="settings-grid" style="margin-top:12px">
+              <label>SecretId<input class="inp" id="cfgTencentId" type="password" autocomplete="new-password" placeholder="留空保留原值"><span id="cfgTencentIdStatus" class="hint"></span></label>
+              <label>SecretKey<input class="inp" id="cfgTencentKey" type="password" autocomplete="new-password" placeholder="留空保留原值"><span id="cfgTencentKeyStatus" class="hint"></span></label>
+              <label>地域<input class="inp" id="cfgTencentRegion" placeholder="填写腾讯云服务地域" autocomplete="off"></label>
+            </div>
+            <label class="hint"><input type="checkbox" id="cfgClearTencent"> 删除本机已保存的腾讯云凭据</label>
+          </details>
+          <p id="cfgEnvOverrides" class="hint" hidden></p>
+          <div class="row" style="margin-top:16px"><button class="btn p" type="submit" id="cfgSave">保存模型设置</button><button class="btn" type="button" onclick="CommunitySettings.load()">重新读取</button><span class="hint grow" id="cfgTip" role="status"></span></div>
+        </form>
+      </div>
+      <div class="card" id="communityResources"><h2>我的资料包</h2>
+        <p class="hint">导入你有权使用的观察指引和知识资料。没有资料包时，也可以先写观察，之后再补充。</p>
+        <div class="row"><input class="inp grow" id="resourceZip" type="file" accept=".zip,application/zip"><button class="btn" id="resourceImport" onclick="CommunityResources.importZip()">导入 ZIP 资料包</button><button class="btn" onclick="CommunityResources.load()">刷新</button></div>
+        <p class="hint">ZIP 内文本使用 UTF-8 编码，文件结构见仓库资料包说明。</p>
+        <div id="resourceStatus" class="hint" role="status"></div><div id="resourceFiles" class="hint" style="margin-top:8px"></div>
+      </div>
+      <div class="card"><h2>导出的 Word 在哪</h2>
+        <div class="row"><span class="hint grow" id="expDir">导出的 Word 会存在电脑里的固定文件夹，点右边就能打开。</span>
+          <button class="btn" onclick="openExport(1)">打开导出文件夹</button></div>
+        <p class="hint" style="margin:8px 0 0">在「历史批次」里，每一批后面都有「导出 Word」，导完会告诉你文件叫什么、在哪儿。</p></div>
+      <div class="card"><h2>我的写作风格</h2>
+        <p class="hint" style="margin:0 0 8px">让 AI 读一遍你过去在幼师口袋写过的记录，总结出你自己的口吻，
+        以后写评价就照着你的习惯写。内容发送至你配置的模型服务进行总结，生成的写作风格保存在本机。</p>
+        <div id="styleBox" class="hint">还没有学习过。</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn p" id="btnStyleLearn">✍ 学习我的写作风格</button>
+          <button class="btn" id="btnStyleToggle">启用 / 停用</button>
+          <button class="btn b" id="btnStyleView">看看总结了什么</button>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">
+          <div class="hint" style="margin-bottom:6px"><b>另外给它几篇范文</b>——除了幼师口袋上的历史记录，
+            你还可以传几份自己写过的东西（学期评语、家园联系册、以前的观察记录都行），
+            它会一起学。支持 .docx / .txt / .md，一份文件里可以有很多条，用空行隔开。</div>
+          <div id="styleFiles" class="hint" style="margin:6px 0">还没有传过文件。</div>
+          <div class="row">
+            <button class="btn" id="btnStyleUp">＋ 上传范文</button>
+            <button class="btn d sm" id="btnStyleClr">清空范文</button>
+          </div>
+          <input type="file" id="fileStyle" multiple accept=".txt,.md,.docx,.csv" hidden>
+        </div>
+        <div id="styleProg" style="margin-top:10px;display:none"><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:6px">正在读你写过的记录…</div></div>
+      </div>
+      <div class="card"><h2>幼师口袋账号</h2>
+        <div class="row"><span id="setLogin" class="grow"></span>
+          <button class="btn" id="btnRelogin">登录状态不对？重登一次</button>
+          <button class="btn d" id="btnLogout">退出，换个账号用</button></div>
+        <p class="hint" style="margin:8px 0 0">这台电脑可以先后给几位老师用：<b>退出 → 换另一个账号登录</b>就行，
+          各账号的照片、名单和草稿按账号隔离保存；切换账号后会重新载入对应内容。</p></div>
+      <div class="card"><h2>幼师口袋网页版</h2>
+        <div class="row"><span id="yskSiteAccount" class="grow hint"></span><button class="btn b" id="btnYskSite" onclick="openYskSite()">打开幼师口袋网站</button></div>
+        <p class="hint" id="yskSiteTip" style="margin:8px 0 0">在软件的新窗口中打开官网，使用当前账号的登录状态。</p></div>
+      <div class="card"><h2>班级</h2>
+        <div class="row"><span id="setClass" class="grow"></span><button class="btn" id="btnPickClass">切换班级</button></div>
+        <p class="hint" style="margin:8px 0 0">托班使用托育体系（24—36个月）；小班→表现行为一，中班→三，大班→五。</p></div>
+      <div class="card"><h2>人脸识别服务（腾讯云）</h2>
+        <div class="row"><span id="faceStat" class="grow hint">未测试</span><button class="btn" id="btnFaceTest">测试连接</button></div></div>
+      <div class="card"><h2>关于社区版</h2><p class="hint" style="margin:0">版本 <span id="ver2"></span> · NB-ZZY · MIT。社区版自行配置模型服务，使用本机导入的资料；平台指标以当前账号可访问的内容为准。<br>本机数据目录：<span id="communityDataDir">读取中…</span></p></div>
+    </section>
+  </main>
+</div>
+
+<!-- ===== 弹窗 ===== -->
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="/static/observation_ai.js"></script>
+<script src="/static/knowledge.js"></script>
+<script src="/static/community_settings.js"></script>
+<script>
+/* ---------------- 基础 ---------------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const S={status:null,sessionEpoch:0,sessionChanging:false,cls:null,students:[],indicators:[],batch:null,obsFiles:[],poll:null,sel:new Set(),groupBy:'none',view:'card',fold:new Set(),_plan:null,speed:{},speedDefault:''};
+async function api(path,opt={}){
+  if(S.sessionChanging&&path!=='/api/logout')throw new Error('正在退出账号，请稍候。');
+  const epoch=S.sessionEpoch;
+  const o={method:opt.method||'GET',headers:{}};
+  if(S.status&&S.status.session_generation!==undefined)o.headers['X-Kidobs-Session']=String(S.status.session_generation);
+  if(opt.json){o.body=JSON.stringify(opt.json);o.headers['Content-Type']='application/json'}
+  if(opt.form){o.body=opt.form}
+  if(opt.signal)o.signal=opt.signal;
+  const r=await fetch(path,o); let j=null; try{j=await r.json()}catch(e){}
+  if(epoch!==S.sessionEpoch||(S.sessionChanging&&path!=='/api/logout'))throw new Error('账号已切换，请重新载入页面。');
+  if(!r.ok){ const msg=(j&&j.error)||('请求失败 '+r.status); if(r.status===401) needLogin(); throw new Error(msg) }
+  return j;
+}
+let toastT; function toast(msg,kind=''){const t=$('#toast');t.textContent=msg;t.className='toast on '+kind;clearTimeout(toastT);toastT=setTimeout(()=>t.className='toast',2600)}
+function modal(html){if(typeof Album!=='undefined'&&Album.opened&&html.indexOf('id="albumPicker"')<0)Album.close();$('#modal').innerHTML=html;$('#mask').classList.add('on')}
+function closeModal(){if(typeof Album!=='undefined'&&Album.opened)Album.close();$('#modal').classList.remove('album-wide');$('#mask').classList.remove('on')}
+$('#mask').addEventListener('click',e=>{if(e.target.id==='mask'&&!S.sessionChanging&&!$('#firstUseConsent'))closeModal()});
+function fmtDate(t){const d=new Date(t*1000);const z=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}月${d.getDate()}日 ${z(d.getHours())}:${z(d.getMinutes())}`}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const hasNative=()=>!!(window.pywebview&&window.pywebview.api);
+async function native(fn,...a){ if(!hasNative()) return null; try{return await window.pywebview.api[fn](...a)}catch(e){toast('本地对话框打开失败：'+e,'err');return null} }
+
+/* ---------------- 导航 ---------------- */
+$$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+function go(p){if(S.sessionChanging)return;$$('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));$$('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p));
+  if(p==='write')ObservationAI.load(); if(p==='notices')Notice.open(); if(p==='roster')loadRoster(); if(p==='history')loadHistory(); if(p==='settings'){renderSettings();if(S.status&&S.status.logged_in)showExportDir();}}
+
+/* ---------------- 启动流程 ---------------- */
+const Notice={
+  open(){this.render();},
+  render(){
+    $('#noticeContent').innerHTML='<article class="notice-card"><span class="notice-label">社区版</span><h3>使用自己的模型，保留自己的资料</h3><p>在设置中填写模型服务地址、模型名称和 API 密钥，然后登录自己的幼师口袋账号同步班级。</p><p>观察记录、随手记和发布前的审核由老师决定。人脸识别为可选功能，可以直接手动选择幼儿。</p><p>代码采用 MIT 许可。导入照片和知识资料前，请确认自己有权使用和处理这些内容。</p></article>';
+  }
+};
+async function boot(){
+  S.status=await api('/api/status');
+  $('#ver').textContent='社区版 v'+S.status.version+(S.status.mock?' (演示模式)':''); $('#ver2').textContent=S.status.version;
+  document.title='幼儿观察助手 · 社区版';
+  await CommunitySettings.load();
+  if(!S.status.logged_in){$('#whoName').textContent='未登录';$('#whoClass').textContent='请在设置中登录自己的账号';go('settings');return;}
+  if(!S.status.consent)return showConsent(true);
+  $('#whoName').textContent=S.status.user.name;
+  if(!S.status.current_class)return pickClass();
+  if(S.cls&&String(S.cls.class_id)!==String(S.status.current_class.class_id))clearObservationInput();
+  S.cls=S.status.current_class;$('#whoClass').textContent=S.cls.name;
+  try{S.indicators=await api('/api/indicators?level='+S.cls.level);}catch(e){S.indicators=[];toast('指标暂未读取：'+e.message,'err');}
+  resetOptCache();
+  try{S.realms=await api('/api/realms?level='+S.cls.level);}catch(e){S.realms=[];}
+  S.students=await api('/api/class/'+S.cls.class_id+'/students');
+  if(CommunitySettings.value&&CommunitySettings.value.face_enabled&&!S.students.some(s=>(s.enrolled_count>0)||(s.cloud_faces>0))){go('roster');toast('可以导入人脸底照，也可以直接写观察并手动选人。');}
+}
+function showConsent(first){
+  modal(`<h2${first?' id="firstUseConsent"':''}>${first?'使用前请确认':'使用须知'}</h2>
+  <div style="padding:12px 14px;border-radius:12px;background:var(--y2);color:#7a5200;line-height:1.8;margin-bottom:12px">
+    AI 用于辅助整理和撰写。生成内容请结合实际观察核对，再决定保存或发布。
+  </div>
+  <p>生成内容时，照片和文字会发送到<b>你配置的模型服务</b>。可选的人脸识别启用后，会向你配置的腾讯云账号发送照片进行比对；只有你点击发布时才提交到幼师口袋。</p>
+  <p>请确保园所已取得家长对使用人脸识别和 AI 辅助记录的同意，且照片仅用于本班观察记录。</p>
+  <p class="hint">照片、名单和草稿保存在本机；调用在线模型、人脸识别或发布功能时，会向相应服务发送完成该功能所需的数据。</p>
+  <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <button class="btn p" onclick="${first?"api('/api/consent',{method:'POST'}).then(()=>{closeModal();boot()})":"closeModal();boot()"}">${first?'我已确认，开始使用':'我知道了'}</button></div>`);
+}
+let loginOpening=false;
+async function openLoginWindow(){
+  // 桥接对象可能先出现、方法稍后才注入；只等登录方法，不影响其他本地操作。
+  for(let n=0;n<50;n++){
+    const bridge=window.pywebview&&window.pywebview.api;
+    if(bridge&&typeof bridge.open_login==='function'){
+      let timer;
+      try{
+        return await Promise.race([
+          Promise.resolve().then(()=>bridge.open_login()),
+          new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('等待桌面程序确认超时。请先查看是否已有登录窗口，再点“自查”并把结果用于排查。')),45000)})
+        ]);
+      }finally{clearTimeout(timer)}
+    }
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  throw new Error('尚未连接到桌面登录功能。如果当前使用浏览器，请打开“幼儿观察助手”应用后登录；如果已在应用内，请点“自查”并把结果用于排查。');
+}
+function needLogin(autoOpen=false){
+  modal(`<h2>登录幼师口袋</h2><p>点击下面按钮会打开幼师口袋的登录页，用微信扫码或账号密码登录后，这个窗口会自动关闭。</p>
+  <p class="hint">程序只保存登录状态（Cookie）在本机，不会记录你的密码。</p>
+  ${typeof itemDrafts!=='undefined'&&itemDrafts.size?'<p class="hint">当前还有未保存内容，请先复制留存。使用原账号重新登录后可以继续保存；换账号会关闭当前编辑页。</p>':''}
+  <div class="row" style="justify-content:flex-end;margin-top:14px;gap:8px">
+    <button class="btn" onclick="runSelfCheck()">登录老是不成功？点这里自查</button>
+    <button class="btn p" id="btnLoginGo" ${loginOpening?'disabled':''}>打开登录窗口</button></div>
+  <div id="loginTip" class="hint" style="margin-top:10px">${loginOpening?'正在连接桌面程序并打开登录窗口…':''}</div>
+  <div id="selfCheck" style="margin-top:10px"></div>`);
+  $('#btnLoginGo').onclick=async()=>{
+    if(loginOpening)return;
+    loginOpening=true; $('#btnLoginGo').disabled=true;
+    const opening='正在连接桌面程序并打开登录窗口…';
+    $('#loginTip').textContent=opening;
+    try{
+      const r=await openLoginWindow();
+      if(r!==true)throw new Error(r&&r.error?String(r.error):'桌面程序没有确认登录窗口已打开。请点“自查”并把结果用于排查。');
+      const tip=$('#loginTip');
+      // 不覆盖桌面端已经推送的登录故障原因。
+      if(tip&&tip.textContent===opening)tip.textContent='登录窗口已打开，请在新窗口里扫码……登录成功后会自动继续。';
+    }catch(e){
+      const tip=$('#loginTip'); if(tip)tip.textContent='打开登录窗口失败：'+((e&&e.message)||String(e));
+    }finally{
+      loginOpening=false; const button=$('#btnLoginGo'); if(button)button.disabled=false;
+    }
+  };
+  if(autoOpen)return $('#btnLoginGo').onclick();
+}
+window.__onLoggedIn=identity=>{
+  const previous=S.status&&S.status.user&&S.status.user.id;
+  S.sessionEpoch++;
+  if(identity&&identity.id&&previous&&String(identity.id)===String(previous)){
+    // 登录凭证过期后的原账号续登，保留尚未保存的编辑内容。
+    if(identity.session_generation!==null&&identity.session_generation!==undefined)S.status.session_generation=identity.session_generation;
+    else delete S.status.session_generation;
+    closeModal();boot();return;
+  }
+  S.sessionChanging=true;location.reload();
+};
+/* 自查：把登录这条路一步一步走一遍，卡在哪儿一眼看得见 */
+async function runSelfCheck(){
+  const box=$('#selfCheck'); if(box) box.innerHTML='<span class="hint">正在一步一步试，十几秒……</span>';
+  try{
+    const r=await api('/api/selfcheck');
+    const rows=(r.rows||[]).map(x=>`<div class="li" style="align-items:flex-start">
+      <span style="font-size:16px;width:20px">${x['好']?'✅':'❌'}</span>
+      <span style="flex:1"><b>${esc(x['名目'])}</b><br><span class="hint">${esc(x['说明'])}</span></span>
+      <span class="hint">${x['毫秒']} 毫秒</span></div>`).join('');
+    box.innerHTML=`<div class="list">${rows}</div>
+      <p class="hint" style="margin:8px 0 0">v${esc(r.version)} · ${esc(r.plat||'')} ·
+      <br><b>记录这里的错误信息用于排查</b>。</p>`;
+  }catch(e){ box.innerHTML='<span class="bad">自查没跑起来：'+esc(e.message)+'</span>'; }
+}
+/* 登录窗口那边卡住了，桌面壳会把原因推过来 —— 别让老师对着一个不动的窗口干等 */
+window.__loginTrouble=(msg)=>{
+  const tip=document.getElementById('loginTip');
+  if(tip){ tip.innerHTML='<b style="color:#b00">'+esc(msg)+'</b>'; }
+  else { modal(`<h2>登录没成功</h2><p style="line-height:1.9">${esc(msg)}</p>
+    <div class="row" style="justify-content:flex-end;margin-top:14px">
+      <button class="btn" onclick="closeModal()">知道了</button>
+      <button class="btn p" onclick="closeModal();needLogin()">再试一次</button></div>`); }
+};
+async function pickClass(){
+  let list; try{list=await api('/api/classes')}catch(e){return modal(`<h2>获取班级失败</h2><p>${esc(e.message)}</p><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal();needLogin()">重新登录</button></div>`)}
+  if(!list.length) return modal('<h2>这个账号下没有班级</h2><p>请先在幼师口袋里加入班级。</p>');
+  modal(`<h2>选择班级</h2><p class="hint">选好后会把名单同步到本机。之后可在"设置"里切换。</p><div class="list">${list.map(c=>`<div class="li" style="cursor:pointer" onclick="chooseClass(${c.classId})"><b class="grow">${esc(c.name)}</b><span class="pill">${esc(CLASS_LABEL[c.level]||'未确认班型')}</span><span class="hint">${c.studentCount||''}人</span></div>`).join('')}</div>`);
+}
+async function chooseClass(id){
+  const previous=S.cls&&S.cls.class_id; closeModal(); toast('正在同步名单…');
+  try{await api('/api/class/'+id+'/sync',{method:'POST'});}catch(e){return toast(e.message,'err')}
+  if(previous&&String(previous)!==String(id))clearObservationInput();
+  toast('名单已同步','ok'); boot();
+}
+
+let yskSiteOpening=false;
+async function openYskSite(){
+  if(yskSiteOpening||S.sessionChanging)return;
+  if(!S.status||!S.status.logged_in){toast('请先登录幼师口袋。','err');needLogin();return;}
+  const button=$('#btnYskSite'),tip=$('#yskSiteTip'),epoch=S.sessionEpoch;
+  yskSiteOpening=true;if(button)button.disabled=true;if(tip)tip.textContent='正在确认并打开当前账号的幼师口袋网站…';
+  try{
+    let bridge;
+    for(let n=0;n<50;n++){
+      if(epoch!==S.sessionEpoch||S.sessionChanging)throw new Error('账号已变化，请重新打开。');
+      bridge=window.pywebview&&window.pywebview.api;
+      if(bridge&&typeof bridge.open_ysk_site==='function')break;
+      bridge=null;await new Promise(resolve=>setTimeout(resolve,100));
+    }
+    if(!bridge)throw new Error('请在“幼儿观察助手”桌面版中使用此功能；软件会沿用自己的登录状态打开官网。');
+    // 原生方法负责身份校验和超时；等待实际结果，避免重复点击另开窗口。
+    const r=await bridge.open_ysk_site();
+    if(epoch!==S.sessionEpoch||S.sessionChanging)return;
+    if(r!==true)throw new Error(r&&r.error?String(r.error):'桌面程序未确认网站窗口已打开，请稍后重试。');
+    if(tip)tip.textContent='网站窗口已打开，使用当前账号的登录状态。';
+  }catch(e){if(epoch===S.sessionEpoch&&!S.sessionChanging){if(tip)tip.textContent=e.message||String(e);toast(e.message||String(e),'err');}}
+  finally{yskSiteOpening=false;if(button)button.disabled=false;}
+}
+
+// 官网相册只是照片来源，选图后仍进入本地照片队列，由老师主动开始识别。
+const Album={
+  opened:false,ctx:null,albums:[],photos:new Map(),selected:new Set(),failures:new Map(),
+  token:'',page:0,hasMore:false,total:0,loading:false,importing:false,error:'',message:'',progress:null,limit:80,
+  current(ctx){return this.opened&&this.ctx===ctx&&!S.sessionChanging&&ctx.epoch===S.sessionEpoch&&S.cls&&String(S.cls.class_id)===ctx.cid&&S.status&&S.status.logged_in&&String(S.status.user&&S.status.user.id)===ctx.uid&&String(S.status.session_generation)===ctx.generation;},
+  open(){
+    if(!S.cls)return toast('请先选择班级。','err');
+    if(!S.status||!S.status.logged_in){needLogin();return;}
+    if(this.opened){this.render();return;}
+    const now=new Date(),start=new Date(now.getFullYear(),now.getMonth()-1,1);
+    this.opened=true;this.from=start.getFullYear()+'-'+String(start.getMonth()+1).padStart(2,'0')+'-01';this.to=todayStr();this.reset();this.load(0);
+  },
+  close(){
+    if(this.ctx)this.ctx.controller.abort();this.opened=false;this.ctx=null;this.albums=[];this.photos.clear();this.selected.clear();this.failures.clear();this.loading=false;this.importing=false;this.progress=null;
+    const m=$('#modal');if(m)m.classList.remove('album-wide');
+  },
+  reset(){
+    if(this.ctx)this.ctx.controller.abort();
+    this.ctx={cid:String(S.cls.class_id),uid:String(S.status.user&&S.status.user.id),epoch:S.sessionEpoch,generation:String(S.status.session_generation),controller:new AbortController()};
+    this.albums=[];this.photos.clear();this.selected.clear();this.failures.clear();this.token='';this.page=0;this.hasMore=false;this.total=0;this.error='';this.message='';this.progress=null;
+  },
+  async filter(){
+    if(this.loading||this.importing)return;
+    const from=$('#albumFrom').value,to=$('#albumTo').value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)||from>to)return toast('请填写有效的起止日期，开始日期不能晚于结束日期。','err');
+    if(!Number.isFinite(Date.parse(from))||!Number.isFinite(Date.parse(to))||new Date(from).toISOString().slice(0,10)!==from||new Date(to).toISOString().slice(0,10)!==to)return toast('请填写有效日期。','err');
+    if(Date.parse(to)-Date.parse(from)>365*86400000)return toast('一次最多查看一年的相册，请缩小日期范围。','err');
+    this.from=from;this.to=to;this.reset();await this.load(0);
+  },
+  async load(page){
+    if(this.loading||this.importing||!this.ctx)return;const ctx=this.ctx;if(!this.current(ctx))return;
+    this.loading=true;this.error='';this.retryPage=page;this.render();
+    try{
+      const q='?from_date='+encodeURIComponent(this.from)+'&to_date='+encodeURIComponent(this.to)+'&page='+page+(this.token?'&token='+encodeURIComponent(this.token):'');
+      const r=await api('/api/class/'+ctx.cid+'/albums'+q,{signal:ctx.controller.signal});
+      if(!this.current(ctx))return;
+      if(!r||!r.token)throw new Error('相册列表返回不完整，请重试。');
+      if(this.token&&r.token!==this.token)throw new Error('相册访问状态已变化，请重新筛选。');
+      this.token=r.token;const seen=new Set(this.albums.map(a=>String(a.id)));
+      (r.albums||[]).forEach(a=>{
+        if(seen.has(String(a.id)))return;seen.add(String(a.id));this.albums.push(a);
+        (a.photos||[]).forEach(p=>this.photos.set(String(p.id),{id:String(p.id),album:a}));
+      });
+      this.page=page;this.hasMore=!!r.has_more;this.total=Number(r.total)||0;
+    }catch(e){if(this.current(ctx)&&e.name!=='AbortError')this.error=e.message||String(e);}
+    finally{if(this.current(ctx)){this.loading=false;this.render();}}
+  },
+  key(id){return this.ctx.cid+':'+id;},
+  used(id){const key=this.key(id);return S.obsFiles.some(f=>f._albumKey===key);},
+  toggle(id,on){
+    id=String(id);if(this.importing||!this.photos.has(id)||this.used(id))return;
+    if(on&&this.selected.size>=this.limit&&!this.selected.has(id)){this.updateSelection();return toast('一次最多选择 '+this.limit+' 张照片。','err');}
+    on?this.selected.add(id):this.selected.delete(id);this.updateSelection();
+  },
+  selectAlbum(id){
+    if(this.importing)return;const a=this.albums.find(x=>String(x.id)===String(id));if(!a)return;
+    const ids=(a.photos||[]).map(p=>String(p.id)).filter(x=>!this.used(x)),add=ids.some(x=>!this.selected.has(x));let limited=false;
+    ids.forEach(x=>{if(!add)this.selected.delete(x);else if(this.selected.size<this.limit||this.selected.has(x))this.selected.add(x);else limited=true;});
+    this.updateSelection();if(limited)toast('一次最多选择 '+this.limit+' 张照片，其余照片可下一次再选。','err');
+  },
+  clear(){if(this.importing)return;this.selected.clear();this.failures.clear();this.message='';this.updateSelection();},
+  previewDone(img,loaded){
+    const card=img.closest('.album-photo');if(!card)return;
+    const failed=!(loaded&&img.naturalWidth>0&&img.naturalHeight>0),button=card.querySelector('.album-retry');
+    img.dataset.previewRetry='';card.classList.toggle('preview-error',failed);
+    if(button){button.disabled=this.importing;button.textContent='预览加载失败，点击重试';}
+  },
+  retryPreview(button){
+    if(this.importing||!this.ctx||!this.current(this.ctx))return;
+    const card=button.closest('.album-photo'),img=card&&card.querySelector('img');if(!img||img.dataset.previewRetry==='1')return;
+    img.dataset.previewRetry='1';button.disabled=true;button.textContent='正在重试预览…';
+    img.src=img.getAttribute('src').split('&_album_retry=')[0]+'&_album_retry='+Date.now();
+  },
+  updateSelection(){
+    if(!this.opened||!$('#albumPicker')||!this.ctx)return;
+    $$('#albumPicker .album-photo').forEach(el=>{const id=el.dataset.id,used=this.used(id),box=el.querySelector('input'),status=el.querySelector('span'),retry=el.querySelector('.album-retry'),img=el.querySelector('img');box.checked=this.selected.has(id)&&!used;box.disabled=this.importing||used;el.classList.toggle('selected',box.checked);el.classList.toggle('used',used);status.textContent=used?'已加入待识别照片':(this.failures.has(id)?'原图下载失败，可重试':'');status.style.display=status.textContent?'block':'none';if(retry)retry.disabled=this.importing||img.dataset.previewRetry==='1';});
+    const count=$('#albumSelected');if(count)count.textContent='已选 '+this.selected.size+' / '+this.limit+' 张';
+    const start=$('#albumImport');if(start){start.disabled=this.importing||!this.selected.size;start.textContent=this.importing?'正在加入照片…':(this.failures.size?'重试并加入选中的照片':'加入待识别照片');}
+    const clear=$('#albumClear');if(clear)clear.disabled=this.importing||!this.selected.size;
+    $$('#albumPicker [data-album]').forEach(b=>{const a=this.albums.find(x=>String(x.id)===b.dataset.album),ids=a?(a.photos||[]).map(p=>String(p.id)).filter(id=>!this.used(id)):[];b.disabled=this.importing||!ids.length;b.textContent=ids.length&&ids.every(id=>this.selected.has(id))?'取消本相册':'全选本相册';});
+    const message=$('#albumMessage');if(message)message.textContent=this.message;
+    const progress=$('#albumProgress');if(progress){progress.hidden=!this.progress;if(this.progress){const p=this.progress;progress.querySelector('progress').value=p.done;progress.querySelector('progress').max=p.total;progress.querySelector('span').textContent='已处理 '+p.done+'/'+p.total+' 张，已加入 '+p.ok+' 张'+(p.fail?'，失败 '+p.fail+' 张':'');}}
+  },
+  render(){
+    if(!this.ctx||!this.current(this.ctx))return;const old=$('#albumScroll'),scroll=old?old.scrollTop:0,ctx=this.ctx;
+    modal(`<div id="albumPicker"><div class="row"><h2 style="margin:0">班级相册 · ${esc(S.cls.name)}</h2><span class="grow"></span><button class="btn sm" onclick="closeModal()">取消</button></div>
+      <div class="row" style="gap:8px;margin-top:12px"><label class="hint">从 <input class="inp" id="albumFrom" type="date" value="${esc(this.from)}" style="width:155px" ${this.loading||this.importing?'disabled':''}></label><label class="hint">到 <input class="inp" id="albumTo" type="date" value="${esc(this.to)}" style="width:155px" ${this.loading||this.importing?'disabled':''}></label><button class="btn sm" onclick="Album.filter()" ${this.loading||this.importing?'disabled':''}>筛选</button><span class="hint">更改日期会清空本次勾选</span></div>
+      <p class="hint" style="margin:8px 0 0">只显示当前班级的相册图片，视频不能选。选图不改变首页的记录日期，也不自动填写老师说明。</p>
+      <div id="albumScroll" class="album-scroll">${this.albums.map(a=>`<section class="album-entry"><div class="row" style="gap:8px"><b>${esc(a.title||'班级相册')}</b><span class="hint">${esc(a.record_date||'')} ${esc(a.author||'')}</span><span class="grow"></span><button class="btn xs" data-album="${esc(a.id)}" onclick="Album.selectAlbum(this.dataset.album)">全选本相册</button></div>${a.description?`<p class="hint" style="margin:4px 0;white-space:pre-wrap">${esc(a.description)}</p>`:''}<div class="album-grid">${(a.photos||[]).map(p=>`<div class="album-photo" data-id="${esc(p.id)}"><label class="album-choice"><input type="checkbox" aria-label="选择相册照片" onchange="Album.toggle(this.closest('.album-photo').dataset.id,this.checked)"><img loading="lazy" src="/api/class/${encodeURIComponent(ctx.cid)}/album-photo/${encodeURIComponent(p.id)}?token=${encodeURIComponent(this.token)}&preview=1" alt="班级相册照片" onload="Album.previewDone(this,true)" onerror="Album.previewDone(this,false)"></label><button class="album-retry" type="button" onclick="Album.retryPreview(this)" aria-live="polite">预览加载失败，点击重试</button><span style="display:none"></span></div>`).join('')}</div>${a.video_count?`<p class="hint" style="margin:5px 0 0">另有 ${Number(a.video_count)||0} 个视频，暂不支持加入观察。</p>`:''}</section>`).join('')}${!this.albums.length&&!this.loading&&!this.error?'<p class="hint center">这个日期范围暂无班级相册图片，可扩大日期范围后重试。</p>':''}${this.loading?'<p class="hint center">正在读取相册…</p>':''}${this.error?`<p style="color:var(--r)">${esc(this.error)}</p><button class="btn sm" onclick="Album.load(Album.retryPage)">重试读取</button>`:''}${this.hasMore&&!this.loading&&!this.error?'<div class="center"><button class="btn sm" onclick="Album.load(Album.page+1)">加载更多相册</button></div>':''}</div>
+      <div class="album-foot"><div id="albumProgress" hidden><progress value="0" max="1"></progress><span class="hint"></span></div><p class="hint" id="albumMessage" style="margin:5px 0;white-space:pre-wrap"></p><div class="row" style="gap:8px"><span id="albumSelected" class="hint grow"></span><button class="btn sm" id="albumClear" onclick="Album.clear()">清空勾选</button><button class="btn p" id="albumImport" onclick="Album.download()">加入待识别照片</button></div></div></div>`);
+    $('#modal').classList.add('album-wide');$('#albumScroll').scrollTop=scroll;this.updateSelection();
+  },
+  async download(){
+    if(this.importing||!this.ctx)return;const ctx=this.ctx;if(!this.current(ctx))return;
+    const ids=Array.from(this.selected).filter(id=>this.photos.has(id)&&!this.used(id));if(!ids.length)return;
+    if(ids.length>this.limit)return toast('一次最多选择 '+this.limit+' 张照片。','err');
+    this.importing=true;this.message='';this.progress={total:ids.length,done:0,ok:0,fail:0};this.render();
+    try{
+      for(const id of ids){
+        if(!this.current(ctx))return;
+        try{
+          const headers={};if(ctx.generation!=='undefined')headers['X-Kidobs-Session']=ctx.generation;
+          const r=await fetch('/api/class/'+ctx.cid+'/album-photo/'+encodeURIComponent(id)+'?token='+encodeURIComponent(this.token)+'&preview=0',{headers,signal:ctx.controller.signal});
+          if(!this.current(ctx))return;
+          if(!r.ok){let err=null;try{err=await r.json()}catch(e){}if(r.status===401)needLogin();throw new Error(err&&err.error?err.error:'图片下载失败 '+r.status);}
+          const blob=await r.blob();if(!this.current(ctx))return;if(!blob.size)throw new Error('图片内容为空，请重试。');
+          const p=this.photos.get(id),file=new File([blob],'班级相册-'+(p.album.record_date||'照片')+'-'+id.slice(0,8)+'.jpg',{type:'image/jpeg'});file._albumKey=this.key(id);
+          const added=addObsFiles([file]);if(!this.current(ctx))return;this.progress.ok+=added||0;this.selected.delete(id);this.failures.delete(id);
+        }catch(e){if(!this.current(ctx)||e.name==='AbortError')return;this.progress.fail++;this.failures.set(id,e.message||String(e));}
+        this.progress.done++;this.updateSelection();
+      }
+      if(!this.current(ctx))return;const p=this.progress;
+      this.message='本次已加入 '+p.ok+' 张照片。'+(p.fail?p.fail+' 张下载失败，仍保留勾选，可重试。\n'+Array.from(this.failures.values()).slice(0,2).join('；'):'请在首页检查照片，再点击“开始识别”。');
+      if(!p.fail){closeModal();toast('已加入 '+p.ok+' 张待识别照片，请检查后开始识别。','ok');}
+    }finally{if(this.current(ctx)){this.importing=false;this.render();}}
+  }
+};
+
+function clearObservationInput(){
+  if(Album.opened)closeModal();S.obsFiles=[];renderObsThumbs();$('#obsNote').value='';S.brief=null;S.briefFor=undefined;$('#briefCard').innerHTML='';
+}
+
+/* ---------------- 写观察 ---------------- */
+const dropObs=$('#dropObs'), fileObs=$('#fileObs');
+const obsPreviewUrls=[];
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+if($('#obsDate')) $('#obsDate').value=todayStr();
+if($('#obsMode')) $('#obsMode').onchange=()=>{ $('#obsModeTip').textContent = $('#obsMode').value==='table'
+  ? '按幼师口袋观察记录表填写，可添加观察场景、关联活动、行为表现、观察分析、回应策略和家庭指导，也能导出 Word。'
+  : '给家长看的一小段话，约 100 字，可一键发布，也能导出 Word。'; };
+dropObs.onclick=()=>fileObs.click();
+fileObs.onchange=()=>addObsFiles([...fileObs.files]);
+['dragenter','dragover'].forEach(ev=>dropObs.addEventListener(ev,e=>{e.preventDefault();dropObs.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>dropObs.addEventListener(ev,e=>{e.preventDefault();dropObs.classList.remove('over')}));
+dropObs.addEventListener('drop',e=>addObsFiles([...e.dataTransfer.files].filter(f=>/image/.test(f.type)||/\.(jpe?g|png|bmp|webp)$/i.test(f.name))));
+function addObsFiles(fs){ if(!S.cls||S.sessionChanging){toast('请先选择班级','err');return 0;}const seen=new Set(S.obsFiles.map(f=>f._albumKey).filter(Boolean)),added=fs.filter(f=>{if(!f._albumKey)return true;if(seen.has(f._albumKey))return false;seen.add(f._albumKey);return true;});S.obsFiles.push(...added);renderObsThumbs();return added.length; }
+function clearObsPreviewUrls(){while(obsPreviewUrls.length)URL.revokeObjectURL(obsPreviewUrls.pop());}
+function removeObsFile(i){S.obsFiles.splice(i,1);renderObsThumbs();if(Album.opened)Album.updateSelection();}
+function renderObsThumbs(){ const box=$('#obsThumbs');clearObsPreviewUrls();box.innerHTML='';S.obsFiles.forEach((f,i)=>{const d=document.createElement('div');d.className='th';const u=URL.createObjectURL(f);obsPreviewUrls.push(u);d.innerHTML=`<img src="${u}"><div class="x" onclick="removeObsFile(${i})">✕</div>`;box.appendChild(d)});$('#btnStart').disabled=!S.obsFiles.length;$('#btnStart').textContent=S.obsFiles.length?`开始识别（${S.obsFiles.length} 张）`:'开始识别'; }
+$('#btnStart').onclick=async()=>{
+  const fd=new FormData(); fd.append('class_id',S.cls.class_id); fd.append('note',$('#obsNote').value);
+  if(S.brief&&S.brief.ok&&S.brief.text===$('#obsNote').value.trim()) fd.append('brief',JSON.stringify(S.brief));
+  fd.append('record_date',($('#obsDate')&&$('#obsDate').value)||todayStr());
+  fd.append('mode',($('#obsMode')&&$('#obsMode').value)||'simple');
+  fd.append('length',($('#obsLen')&&$('#obsLen').value)||'normal'); S.obsFiles.forEach(f=>fd.append('files',f,f.name));
+  $('#btnStart').disabled=true; $('#btnStart').innerHTML='<span class="spin"></span> 上传中…';
+  try{
+    // 老师没点「读一读」就直接开始识别的，这里替他读一遍 —— 照片还在上传，不差这几秒
+    if($('#obsNote').value.trim() && !(S.brief&&S.brief.ok&&S.brief.text===$('#obsNote').value.trim())){
+      $('#btnStart').innerHTML='<span class="spin"></span> 读说明…';
+      try{ await briefRead(true); }catch(e){}
+      if(S.brief&&S.brief.ok) fd.set('brief',JSON.stringify(S.brief));
+      $('#btnStart').innerHTML='<span class="spin"></span> 上传中…';
+    }
+    const r=await api('/api/batch',{method:'POST',form:fd}); S.obsFiles=[]; renderObsThumbs();
+    $('#obsNote').value=''; S.brief=null; S.briefFor=undefined; $('#briefCard').innerHTML=''; openBatch(r.batch_id); }
+  catch(e){toast(e.message,'err')} finally{$('#btnStart').innerHTML='开始识别'; $('#btnStart').disabled=!S.obsFiles.length}
+};
+// ===== 「说给 AI 听」：老师随口说的一段话 → 谁做了什么 + 指标 =====
+$('#obsNote').addEventListener('input',()=>{
+  // 话改了，上一次读出来的结果就作废 —— 别让老师看着旧卡片以为它懂了新的
+  if(S.briefFor!==undefined && S.briefFor!==$('#obsNote').value.trim()){
+    S.brief=null; S.briefFor=undefined; $('#briefCard').innerHTML='';
+  }
+});
+async function briefRead(silent){
+  const t=$('#obsNote').value.trim();
+  if(!t){ if(!silent) toast('先在上面写一句今天在做什么','err'); return; }
+  if(!S.cls){ toast('请先选择班级','err'); return; }
+  const b=$('#btnBrief'); const old=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span> 读…';
+  try{
+    const r=await api('/api/brief/parse',{method:'POST',json:{class_id:S.cls.class_id,text:t}});
+    S.brief=r.ok?r:null; S.briefFor=t;
+    $('#briefCard').innerHTML=briefCard(r);
+    if(!r.ok && !silent) toast('这段话它没当成观察记录','err');
+    return r;
+  }catch(e){ if(!silent) toast(e.message,'err'); throw e; }
+  finally{ b.disabled=false; b.innerHTML=old; }
+}
+function briefCard(r){
+  if(!r) return '';
+  if(!r.ok) return `<div class="card" style="border-color:#f3c9c4;background:#fdf6f5">
+      <b style="color:#b3261e">这段话我没法当成观察记录用</b>
+      <div style="margin-top:6px">${esc(r.why||'')}</div>
+      <div class="hint" style="margin-top:6px">这个框只管"孩子在做什么"——写清楚谁、在干什么、说了什么就够了，别的问题它不回答，也不会白花钱。</div>
+    </div>`;
+  const sc=(r.scenes||[]).map(s=>`<div style="padding:8px 0;border-top:1px solid #eee">
+      <b>${esc((s.student_names&&s.student_names.join('、'))||s.names.join('、')||'（没点名）')}</b>
+      ${(s.student_ids&&s.student_ids.length)?'':'<span class="pill y">名单里没找到</span>'}
+      <div style="margin-top:4px">${esc(s.note||'')}</div>
+      <div style="margin-top:6px">${(s.indicators||[]).map(i=>`<span class="pill b">${esc(i.indicator_name)}</span>`).join(' ')||'<span class="hint">没挑指标，写的时候看照片再定</span>'}</div>
+    </div>`).join('');
+  const un=(r.unknown||[]).length?`<div class="hint" style="margin-top:8px">名单里没找到：<b>${r.unknown.map(esc).join('、')}</b>——这几位的说明分不下去，识别完可以在那条记录里手动写一句。</div>`:'';
+  return `<div class="card" style="background:#f6faf8">
+      <div class="row"><b>它听懂了这些</b><span class="pill g">${esc(r.activity||'今天的活动')}</span><span class="grow"></span>
+        <span class="hint">认对了就直接「开始识别」，它会把每段话分给对应的孩子</span></div>
+      ${sc||'<div class="hint" style="margin-top:6px">没点到具体的孩子，这段话会作为整批的背景。</div>'}
+      ${(r.all&&r.all.note)?`<div class="hint" style="margin-top:8px">没点到名的孩子共用：${esc(r.all.note)}</div>`:''}
+      ${un}
+    </div>`;
+}
+async function briefBatch(){
+  const cur=(S.batch&&S.batch.note)||'';
+  modal(`<h3 style="margin:0 0 8px">给这一批补一段说明</h3>
+    <p class="hint" style="margin:0 0 10px">照片已经认完脸了，这里说的话会按名字分给对应的孩子；没点到名的，作为整批的背景。已审核、已发布的不动。</p>
+    <textarea class="inp" id="bbTxt" rows="4" style="width:100%;resize:vertical;line-height:1.6"
+      placeholder="例如：今天量身高，记录幼儿的原话、轮流测量和互相帮助的过程">${esc(cur)}</textarea>
+    <div id="bbOut" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn p" id="bbGo" onclick="doBriefBatch()">读一读并分下去</button></div>`);
+}
+async function doBriefBatch(){
+  const t=$('#bbTxt').value.trim(); if(!t) return toast('先写一句','err');
+  const b=$('#bbGo'); b.disabled=true; b.innerHTML='<span class="spin"></span> 读…';
+  try{
+    const r=await api('/api/batch/'+S.batch.id+'/brief',{method:'POST',json:{text:t}});
+    $('#bbOut').innerHTML=briefCard(r);
+    if(r.ok){
+      const n=(r.applied&&r.applied.touched)||0;
+      toast('已分到 '+n+' 条记录','ok'); await refreshBatch(S.batch.id);
+      setTimeout(closeModal,1200);
+    }
+  }catch(e){ toast(e.message,'err') }
+  finally{ b.disabled=false; b.innerHTML='读一读并分下去' }
+}
+
+async function openBatch(id){ go('write'); clearInterval(S.poll); S._plan=null; await refreshBatch(id); S.poll=setInterval(()=>refreshBatch(id),2000); }
+async function refreshBatch(id){
+  const b=await api('/api/batch/'+id); S.batch=b; renderBatch(b);
+  const busy=b.status==='processing'||b.items.some(i=>i.ai_status==='writing'||i.publish_status==='publishing');
+  if(!busy) clearInterval(S.poll);
+}
+const stName=id=>{const s=S.students.find(x=>x.student_id===id);return s?s.name:''};
+/* ---------------- 批次视图：分组、折叠、多选批改 ---------------- */
+const LEN_CN={brief:'简要',normal:'普通',detail:'详细'};
+function selSet(){ if(!S.sel) S.sel=new Set(); return S.sel; }
+function selCount(){ return selSet().size }
+function itemSig(i){
+  return JSON.stringify([i.student_id,i.student_ids,i.student_name,i.face_status,i.face_score,i.box,
+    i.indicators,i.modules,i.text,i.table_json,i.ai_status,i.ai_error,i.ai_progress,i.ai_effort,i.ai_effort_options,ObservationAI.effort(i),i.publish_status,i.publish_error,i.record_id,
+    i.approved,i.sync_parent,i.record_date,i.paths,i.level,i.boxes,i.pending_faces,i.stu_indicators,i.teacher_note,curSpeed(i),
+    selSet().has(i.id),selCount(),itemRewrites.has(i.id)]);
+}
+/* 36 条指标、五大领域的下拉只拼一次，别每次重绘都拼 —— 卡顿就是这么来的 */
+let _indOpts=null, _stuOpts=null;
+function indOptsHtml(){
+  if(_indOpts) return _indOpts;
+  const doms=[...new Set(S.indicators.map(x=>x.domain))];
+  _indOpts=doms.map(d=>`<optgroup label="${d}">${S.indicators.filter(x=>x.domain===d).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
+  return _indOpts;
+}
+function stuOptsHtml(){
+  if(_stuOpts) return _stuOpts;
+  _stuOpts=S.students.map(s=>`<option value="${s.student_id}">${esc(s.name)}${s.nickname?'（'+esc(s.nickname)+'）':''}</option>`).join('');
+  return _stuOpts;
+}
+function resetOptCache(){ _indOpts=null; _stuOpts=null; }
+
+function renderBatch(b){
+  const box=$('#batchView'); const items=b.items;
+  const n=items.length, done=items.filter(i=>i.ai_status==='done').length,
+        pub=items.filter(i=>i.publish_status==='done').length, appr=items.filter(i=>i.approved).length;
+  const busy=b.status==='processing';
+  const readyIds=items.filter(i=>i.approved&&!['done','publishing','uncertain'].includes(i.publish_status)&&i.student_id&&i.text).map(i=>i.id);
+  const live=new Set(items.filter(i=>i.publish_status!=='uncertain'&&!itemRewrites.has(i.id)).map(i=>i.id)); [...selSet()].forEach(id=>{ if(!live.has(id)) selSet().delete(id) });
+  const head=`<div class="card" id="batchHead"><div class="row"><h2 style="margin:0">批次 #${b.id} <span class="hint">${fmtDate(b.created_at)}</span>${b.note?` <span class="pill">${esc(b.note)}</span>`:''}</h2><span class="grow"></span>
+    <span class="pill b">${b.mode==='table'?'观察记录表':'随手记'}</span>
+    <label class="hint" style="display:flex;align-items:center;gap:4px">篇幅
+      <select class="inp" style="width:88px;font-size:12px;padding:4px 6px" onchange="setLen(this.value)">
+        ${['brief','normal','detail'].map(v=>`<option value="${v}" ${(b.length||'normal')===v?'selected':''}>${LEN_CN[v]}</option>`).join('')}
+      </select></label>
+    <span class="pill ${busy?'y':'g'}">${busy?'正在识别…':'识别完成'}</span><span class="pill">${done}/${n} 已写好</span><span class="pill b">${appr} 已审核</span><span class="pill g">${pub} 已发布</span>
+    <button class="btn w" onclick="briefBatch()">💬 说明这一批</button>
+    <button class="btn w" onclick="genAll()">✎ 给没写的全部生成</button>
+    <button class="btn sm" onclick="rescanAll()">↻ 重新识别没认出的</button>
+    <button class="btn b" onclick="exportBatch()">⤓ 导出 Word</button>
+    <button class="btn sm d" onclick="clearBatch()">🗑 清除这一批</button>
+    <button class="btn p" id="btnPub" ${readyIds.length?'':'disabled'} onclick="publishBatch()">一键发布已审核的 ${readyIds.length} 条</button></div>
+    ${busy?`<div style="margin-top:12px" class="bar"><i style="width:${n?Math.round(100*done/n):0}%"></i></div>`:''}
+    ${ObservationAI.batchProgress(items)}
+    ${bulkBar(items)}
+    <div id="pubBar" style="margin-top:10px;display:none"><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:6px"></div></div></div>`;
+
+  const plan=layout(items);
+  const ae=document.activeElement, editing=ae&&box.contains(ae)&&/^(TEXTAREA|INPUT)$/.test(ae.tagName);
+  if(S._plan===plan.key && box.querySelector('#batchHead')){
+    if(S._head!==head && !(ae&&$('#batchHead')&&$('#batchHead').contains(ae))){ S._head=head; $('#batchHead').outerHTML=head; }
+    items.forEach(i=>{
+      const el=document.getElementById('it'+i.id); if(!el) return;
+      const sig=itemSig(i);
+      if(el.dataset.sig===sig) return;
+      if(!itemRewrites.has(i.id)&&!['done','publishing','uncertain'].includes(i.publish_status)&&((editing&&el.contains(ae))||itemDrafts.has(i.id)||itemSaves.has(i.id))) return; // 发布或单段生成时及时冻结；其他编辑保留草稿
+      el.outerHTML=(S.view==='grid'?gridCell(i):renderItem(i));
+    });
+    plan.groups.forEach(g=>{ const c=document.getElementById('gc'+g.id); if(c) c.textContent=`${g.items.length} 条`; });
+    return;
+  }
+  S._plan=plan.key; S._head=head;
+  box.innerHTML=head+plan.groups.map(g=>groupHtml(g)).join('');
+}
+function bulkBar(items){
+  const sel=selCount(), all=items.length;
+  return `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <label class="hint" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" ${sel&&sel===all?'checked':''} onchange="selAll(this.checked)"> 全选</label>
+      <span class="pill ${sel?'b':''}">已选 ${sel} 条</span>
+      <button class="btn xs" onclick="selBy('noind')">选没指标的</button>
+      <button class="btn xs" onclick="selBy('nostu')">选没认出人的</button>
+      <button class="btn xs" onclick="selBy('none')">清空选择</button>
+      <span class="grow"></span>
+      <label class="hint" style="display:flex;align-items:center;gap:4px">视图
+        <select class="inp" style="width:92px;font-size:12px;padding:4px 6px" onchange="setView(this.value)">
+          <option value="card" ${S.view!=='grid'?'selected':''}>卡片</option>
+          <option value="grid" ${S.view==='grid'?'selected':''}>网格</option>
+        </select></label>
+      <label class="hint" style="display:flex;align-items:center;gap:4px">分组
+        <select class="inp" style="width:112px;font-size:12px;padding:4px 6px" onchange="setGroup(this.value)">
+          <option value="none" ${S.groupBy!=='ind'?'selected':''}>不分组</option>
+          <option value="ind" ${S.groupBy==='ind'?'selected':''}>按指标归堆</option>
+        </select></label>
+      ${S.groupBy==='ind'?`<button class="btn xs" onclick="foldAll(1)">全部折叠</button><button class="btn xs" onclick="foldAll(0)">全部展开</button>`:''}
+    </div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px;${sel?'':'opacity:.45;pointer-events:none'}">
+      <span class="hint">对选中的 ${sel} 条：</span>
+      <button class="btn xs p" onclick="bulkAddInd()">＋ 加指标</button>
+      <button class="btn xs" onclick="bulkDelInd()">− 删某条指标</button>
+      <button class="btn xs" onclick="bulkAddMod()">＋ 关联领域</button>
+      <button class="btn xs" onclick="bulkAddStu()">＋ 再评一个孩子</button>
+      <button class="btn xs p" onclick="bulkMerge()">⧉ 合并成一条</button>
+      <label class="hint" style="display:flex;align-items:center;gap:4px">日期
+        <input class="inp" type="date" style="width:142px;font-size:12px;padding:4px 6px" onchange="bulkDate(this.value)"></label>
+      <button class="btn xs" onclick="bulkSync(1)">同步家长 开</button>
+      <button class="btn xs" onclick="bulkSync(0)">关</button>
+      <button class="btn xs w" onclick="bulkGen()">✎ AI 生成</button>
+      ${ObservationAI.batchPicker()}
+      <button class="btn xs b" onclick="exportSel()">⤓ 导出选中的</button>
+      <button class="btn xs" onclick="bulkApprove(1)">✓ 审核通过</button>
+      <button class="btn xs d" onclick="bulkDel()">🗑 删掉</button>
+    </div></div>`;
+}
+/* 按指标归堆：同一条主指标的排在一起，可折叠 */
+function layout(items){
+  if(S.groupBy!=='ind') return {key:'flat|'+(S.view||'card')+'|'+items.map(i=>i.id).join(','), groups:[{id:'all',title:'',items:items}]};
+  const map=new Map();
+  items.forEach(i=>{ const p=itemIndicators(i); const k=p.length?p[0].indicator_name:'（还没选指标）';
+    if(!map.has(k)) map.set(k,[]); map.get(k).push(i); });
+  const groups=[...map.entries()].sort((a,b)=>b[1].length-a[1].length)
+    .map(([k,v],n)=>({id:'g'+n, title:k, items:v}));
+  return {key:'ind|'+(S.view||'card')+'|'+groups.map(g=>g.title+':'+g.items.map(i=>i.id).join('-')).join('|')+'|'+[...(S.fold||[])].join(','), groups};
+}
+function wrapGrid(html){ return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:10px">${html}</div>`; }
+function cells(items){ return S.view==='grid' ? wrapGrid(items.map(gridCell).join('')) : items.map(renderItem).join(''); }
+function groupHtml(g){
+  if(!g.title) return cells(g.items);
+  const folded=(S.fold||new Set()).has(g.title);
+  return `<div class="card" style="padding:10px 14px;margin-bottom:8px">
+      <div class="row" style="align-items:center;gap:8px">
+        <button class="btn xs" onclick="fold('${esc(g.title).replace(/'/g,"\\'")}')">${folded?'▸':'▾'}</button>
+        <b>${esc(g.title)}</b><span class="pill b" id="gc${g.id}">${g.items.length} 条</span>
+        <span class="grow"></span>
+        <button class="btn xs" onclick="selGroup('${esc(g.title).replace(/'/g,"\\'")}')">选中这一堆</button>
+      </div></div>
+    ${folded?'':cells(g.items)}`;
+}
+function setView(v){ S.view=v; S._plan=null; renderBatch(S.batch); }
+function gridCell(i){
+  const pub=i.publish_status==='done';
+  const uncertain=i.publish_status==='uncertain';
+  const picks=itemIndicators(i);
+  const ids=itemStuIds(i);
+  const hasText=isTable()? !!(i.table_json&&(itemTable(i)['观察内容']||'').trim()) : !!(i.text&&i.text.trim());
+  let pend=0; if(i.pending_faces){ try{ pend=(JSON.parse(i.pending_faces)||[]).length; }catch(e){} }
+  const chips=picks.slice(0,3).map(p=>{ const ind=S.indicators.find(x=>x.id===p.indicator_id)||{};
+    const [bg,fg]=domColor(ind.domain);
+    return `<span style="background:${bg};color:${fg};border-radius:6px;padding:1px 6px;font-size:11px">${esc(p.indicator_name||'')}</span>`;}).join(' ');
+  return `<div class="gcell ${i.approved?'ok':''}" id="it${i.id}" data-sig='${esc(itemSig(i))}'
+      style="border:1px solid ${i.approved?'#2e7d32':'var(--line)'};border-radius:12px;overflow:hidden;background:#fff;position:relative">
+    <label style="position:absolute;left:6px;top:6px;background:#fff;border-radius:6px;padding:2px 5px;box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:pointer;z-index:2">
+      <input type="checkbox" ${uncertain?'disabled':''} ${selSet().has(i.id)?'checked':''} onchange="toggleSel(${i.id},this.checked)"></label>
+    <div style="height:132px;background:#f2f2f2;cursor:zoom-in" title="点一下看大图" onclick="viewPhoto(${i.id},0)">
+      <img src="/api/item/${i.id}/image" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>
+    <div style="padding:6px 8px">
+      <div style="font-weight:600;font-size:13px">${ids.length?esc(i.student_name||''):'<span style="color:#b3261e">？没认出来</span>'}
+        ${ids.length>1?`<span class="pill b">${ids.length} 人</span>`:''}${pend?`<span class="pill y">${pend} 张待认</span>`:''}</div>
+      <div style="margin:4px 0;min-height:18px">${chips||'<span class="hint" style="font-size:11px">还没有指标</span>'}${picks.length>3?`<span class="hint">+${picks.length-3}</span>`:''}</div>
+      ${ObservationAI.itemProgress(i)}
+      <div class="row" style="gap:4px">
+        <span class="pill ${hasText?'g':''}" style="font-size:11px">${hasText?'已写':'未写'}</span>
+        ${pub?'<span class="pill g" style="font-size:11px">已发布</span>':''}
+        ${uncertain?'<span class="pill y" style="font-size:11px">发布结果待核对</span>':''}
+        <span class="grow"></span>
+        <button class="btn xs" onclick="setView('card')">展开改</button>
+      </div></div></div>`;
+}
+function fold(t){ S.fold=S.fold||new Set(); S.fold.has(t)?S.fold.delete(t):S.fold.add(t); S._plan=null; renderBatch(S.batch); }
+function foldAll(on){ S.fold=new Set(on?layout(S.batch.items).groups.map(g=>g.title):[]); S._plan=null; renderBatch(S.batch); }
+function setGroup(v){ S.groupBy=v; S.fold=new Set(); S._plan=null; renderBatch(S.batch); }
+function selGroup(t){ layout(S.batch.items).groups.filter(g=>g.title===t).forEach(g=>g.items.filter(i=>i.publish_status!=='uncertain').forEach(i=>selSet().add(i.id))); S._plan=null; renderBatch(S.batch); }
+function toggleSel(id,on){ on?selSet().add(id):selSet().delete(id); S._plan=null; renderBatch(S.batch); }
+function selAll(on){ S.sel=new Set(on?S.batch.items.filter(i=>i.publish_status!=='uncertain').map(i=>i.id):[]); S._plan=null; renderBatch(S.batch); }
+function selBy(kind){
+  if(kind==='none') S.sel=new Set();
+  else if(kind==='noind') S.sel=new Set(S.batch.items.filter(i=>!itemIndicators(i).length&&i.publish_status!=='done').map(i=>i.id));
+  else if(kind==='nostu') S.sel=new Set(S.batch.items.filter(i=>!i.student_id).map(i=>i.id));
+  S._plan=null; renderBatch(S.batch);
+}
+async function doBulk(action,value,tip){
+  const ids=[...selSet()].filter(id=>!itemRewrites.has(id)&&!S.batch.items.some(i=>i.id===id&&['done','publishing','uncertain'].includes(i.publish_status))); if(!ids.length) return toast('先勾选可操作的记录；发布结果待核对的记录请先到幼师口袋网页核对。','err');
+  const extra = (action==='generate') ? {effort: (ObservationAI.info&&ObservationAI.info.selected)||''} : {};
+  try{ if(action==='generate'||action==='approve') await flushItemEdits(ids);
+    const r=await api('/api/batch/'+S.batch.id+'/bulk',{method:'POST',json:Object.assign({item_ids:ids,action,value},extra)});
+    toast((tip||'已改')+` ${r.changed} 条`,'ok'); S._plan=null; await refreshBatch(S.batch.id); }
+  catch(e){ toast(e.message,'err') }
+}
+async function bulkMerge(){
+  // 一次活动往往拍了好几张：他动手的样子、半成品、最后的作品。
+  // 作品照上没有脸，程序自己认不出这几张是一回事，得老师点一下。
+  const ids=[...selSet()];
+  if(ids.length<2) return toast('至少勾两条才能合并','err');
+  const items=ids.map(id=>S.batch.items.find(x=>x.id===id)).filter(Boolean);
+  const photos=items.reduce((a,i)=>a+itemPhotoCount(i),0);
+  if(photos>6) return toast(`这几条加起来有 ${photos} 张照片，一条最多放 6 张，少选几条`,'err');
+  const kids=[...new Set(items.flatMap(i=>itemStuIds(i)))];
+  const names=kids.map(k=>(S.students.find(s=>s.student_id===k)||{}).name).filter(Boolean);
+  modal(`<h2>合并成一条</h2>
+    <p class="hint">把勾中的 ${ids.length} 条并成一条记录，<b>第一条的照片当主图</b>，其余的接在后面。</p>
+    <div class="li" style="padding:10px;margin-top:8px;line-height:1.9">
+      合并后共 <b>${photos}</b> 张照片<br>
+      孩子：${names.length?names.map(esc).join('、'):'<span style="color:#b3261e">还没认出人——合并后在卡片里指一下是谁</span>'}<br>
+      <span class="hint">指标、关联领域、老师说明都会合到一起；原来写好的文字会清掉，需要重新点「AI 生成」——因为照片变了，那段话已经不算数了。</span>
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px;gap:8px">
+      <button class="btn" onclick="closeModal()">算了</button>
+      <button class="btn p" onclick="closeModal();doMerge()">合并</button>
+    </div>`);
+}
+async function doMerge(){
+  const ids=[...selSet()];
+  try{
+    const r=await api('/api/batch/'+S.batch.id+'/merge',{method:'POST',json:{item_ids:ids}});
+    selSet().clear(); S._plan=null; await refreshBatch(S.batch.id);
+    toast(`并成一条了：${r.photos} 张照片、${r.students} 个孩子，记得重新生成文字`,'ok');
+  }catch(e){ toast(e.message,'err') }
+}
+function bulkAddInd(){ pickIndicator(id=>doBulk('add_indicator',id,'加好指标'),'给选中的 '+selCount()+' 条一起加一条指标'); }
+function bulkDelInd(){
+  const used=new Map(); S.batch.items.filter(i=>selSet().has(i.id)).forEach(i=>itemIndicators(i).forEach(p=>used.set(p.indicator_id,p.indicator_name)));
+  if(!used.size) return toast('选中的这些条还没有指标','err');
+  modal(`<h2>删掉哪条指标</h2><p class="hint">从选中的 ${selCount()} 条里，把这条指标去掉。</p>
+    <div style="max-height:50vh;overflow:auto;margin-top:10px">${[...used].map(([id,nm])=>`<div class="li" style="cursor:pointer" onclick="closeModal();doBulk('del_indicator',${id},'去掉了指标')"><b>${esc(nm)}</b></div>`).join('')}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" onclick="closeModal()">算了</button></div>`);
+}
+function bulkAddMod(){ pickRealm(v=>doBulk('add_module',v,'加好关联领域'),'给选中的 '+selCount()+' 条一起加关联领域'); }
+function bulkAddStu(){ pickStudent(sid=>doBulk('students_add',sid,'加上了这个孩子'),'给选中的 '+selCount()+' 条都再评一个孩子'); }
+function bulkDate(v){ if(v) doBulk('date',v,'改好日期'); }
+function bulkSync(on){ doBulk('sync',!!on, on?'打开同步':'关掉同步'); }
+function bulkSpeed(){ return S.speedDefault || 'fast'; }
+function setBulkSpeed(k){
+  S.speedDefault=k;
+  // 勾中的那几条一起跟着改
+  [...selSet()].forEach(id=>{ S.speed[id]=k; });
+  markBulkSpeed(); renderBatch(S.batch);
+  toast(k==='fast'?'选中的这些改成「快」了':'选中的这些改成「细」了');
+}
+function markBulkSpeed(){
+  const k=bulkSpeed();
+  const f=document.getElementById('bsFast'), d=document.getElementById('bsDeep');
+  if(f) f.className='btn xs'+(k==='fast'?' p':'');
+  if(d) d.className='btn xs'+(k==='deep'?' p':'');
+}
+function bulkGen(){
+  if(!confirm(`让 AI 给选中的 ${selCount()} 条写文字？会覆盖已写好的草稿。`)) return;
+  doBulk('generate',null,'开始生成');
+}
+function bulkApprove(on){ doBulk('approve',!!on,'标记'); }
+function bulkDel(){ if(!confirm(`把选中的 ${selCount()} 条删掉？已发布的会先撤回。`)) return; doBulk('delete',null,'删掉'); }
+
+/* ---- 选择器弹窗：指标 / 领域 / 孩子（全局只有一个，卡片上不再塞几十个 option） ---- */
+/* ---- 指标选择器：分色网格，直接列出最小单位的表现行为 ---- */
+const DOM_COLOR={'健康领域':['#e8f5e9','#2e7d32'],'语言领域':['#e3f2fd','#1565c0'],
+  '社会领域':['#fff3e0','#e65100'],'科学领域':['#f3e5f5','#6a1b9a'],'艺术领域':['#fce4ec','#ad1457'],
+  '动作与习惯':['#e8f5ef','#26725a'],'情感与社会':['#fff2e7','#925e35'],
+  '认知与探索':['#f0eefa','#66518a'],'语言与沟通':['#e8f1fb','#42678c']};
+function domColor(d){ return DOM_COLOR[d]||['#eceff1','#37474f']; }
+function pickIndicator(cb,title,exclude){
+  window._pickInd=cb; const ex=new Set(exclude||[]);
+  const cur=(S.cls&&S.cls.level)||5;
+  const doms=[...new Set(S.indicators.map(x=>x.domain))];
+  const card=x=>{
+    const [bg,fg]=domColor(x.domain);
+    const lines=(x.lines||[]);
+    return `<div class="icard" data-n="${esc(x.name+(x.subdomain||'')+x.domain+lines.join(''))}"
+        style="border:1px solid ${fg}22;border-radius:12px;overflow:hidden;background:#fff">
+      <div style="background:${bg};color:${fg};padding:6px 10px;font-weight:600;font-size:13px;cursor:pointer"
+           onclick="closeModal();window._pickInd(${x.id})">${esc(x.name)}
+        <span style="font-weight:400;opacity:.7;font-size:11px">${esc(x.subdomain||'')}</span></div>
+      <div style="padding:4px 6px">${lines.map(l=>`
+        <div class="iline" data-n="${esc(l)}" style="padding:5px 7px;border-radius:8px;cursor:pointer;font-size:12.5px;line-height:1.5"
+             onmouseover="this.style.background='${bg}'" onmouseout="this.style.background=''"
+             onclick="closeModal();window._pickInd(${x.id},this.dataset.n)">· ${esc(l)}</div>`).join('')
+        ||'<div class="hint" style="padding:5px 7px">（这一档没有列表现行为）</div>'}</div></div>`;
+  };
+  modal(`<h2>选指标</h2>
+    <p class="hint">${esc(title||'')}　点<b>标题</b>=只挂这条指标；点<b>某一句</b>=挂这条指标并勾上那一句。</p>
+    <input class="inp" id="indQ" placeholder="打两个字就能找，比如「站姿」「合作」「名字」——句子里的字也能搜"
+      oninput="filtInd(this.value)" style="margin:8px 0">
+    <div id="indList" style="max-height:56vh;overflow:auto">
+      ${doms.map(d=>{const [bg,fg]=domColor(d); const list=S.indicators.filter(x=>x.domain===d&&!ex.has(x.id));
+        if(!list.length) return '';
+        return `<div class="idom" data-d="${esc(d)}">
+          <div style="margin:12px 0 6px;font-weight:700;color:${fg};border-left:4px solid ${fg};padding-left:8px">${esc(d)}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">
+            ${list.map(card).join('')}</div></div>`;}).join('')}
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" onclick="closeModal()">算了</button></div>`);
+  setTimeout(()=>{const q=$('#indQ'); q&&q.focus()},80);
+}
+function filtInd(v){
+  v=(v||'').trim();
+  document.querySelectorAll('#indList .icard').forEach(c=>{
+    const hitCard=!v||c.dataset.n.includes(v);
+    let any=false;
+    c.querySelectorAll('.iline').forEach(l=>{
+      const hit=!v||l.dataset.n.includes(v)||hitCard;
+      l.style.display=hit?'':'none'; if(hit) any=true;
+    });
+    c.style.display=(hitCard||any)?'':'none';
+  });
+  document.querySelectorAll('#indList .idom').forEach(d=>{
+    d.style.display=[...d.querySelectorAll('.icard')].some(c=>c.style.display!=='none')?'':'none';
+  });
+}
+
+function pickRealm(cb,title){
+  window._pickRealm=cb;
+  modal(`<h2>选关联领域</h2><p class="hint">${esc(title||'')}</p>
+    <div style="max-height:52vh;overflow:auto;margin-top:8px">
+      ${(S.realms||[]).map(r=>`<div class="hint" style="margin:10px 0 4px"><b>${esc(r.realm)}</b></div>`+
+        r.modules.map(m=>`<div class="li" style="cursor:pointer;padding:8px 10px" onclick="closeModal();window._pickRealm({realm:'${esc(r.realm)}',module:'${esc(m)}'})">${esc(m)}</div>`).join('')).join('')}
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" onclick="closeModal()">算了</button></div>`);
+}
+function pickStudent(cb,title,exclude){
+  window._pickStu=cb; const ex=new Set(exclude||[]);
+  modal(`<h2>选一个孩子</h2><p class="hint">${esc(title||'')}</p>
+    <input class="inp" id="stuQ" placeholder="打名字里的一个字就能找" oninput="filtStu(this.value)" style="margin:8px 0">
+    <div id="stuList" style="max-height:52vh;overflow:auto;display:flex;flex-wrap:wrap;gap:6px">
+      ${S.students.filter(s=>!ex.has(s.student_id)).map(s=>`<button class="btn sm sr" data-n="${esc(s.name)}${esc(s.nickname||'')}" onclick="closeModal();window._pickStu(${s.student_id})">${esc(s.name)}</button>`).join('')}
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" onclick="closeModal()">算了</button></div>`);
+  setTimeout(()=>{const q=$('#stuQ'); q&&q.focus()},80);
+}
+function filtStu(v){ v=(v||'').trim(); document.querySelectorAll('#stuList .sr').forEach(el=>{ el.style.display=(!v||el.dataset.n.includes(v))?'':'none' }); }
+
+function updateItemStates(items){ renderBatch(S.batch); }
+function stateHtml(i){
+  let s='';
+  if(i.face_status==='matched') s+=`<span class="pill g">识别 ${i.face_score}分</span>`;
+  else if(i.face_status==='part') s+=`<span class="pill y">认出一部分，还有脸没认出来</span>`;
+  else if(i.face_status==='multi') s+=`<span class="pill y">照片里有多个孩子</span>`;
+  else if(i.face_status==='unknown') s+=`<span class="pill r">这张脸没认出来${i.student_name?'（有点像 '+esc(i.student_name)+'，'+i.face_score+'分）':''}</span>`;
+  else if(i.face_status==='noface') s+=`<span class="pill y">照片里没有人脸（作品照？在右边指给一个孩子就行）</span>`;
+  else if(i.face_status==='manual') s+=`<span class="pill b">老师指定</span>`;
+  else if(i.face_status==='error') s+=`<span class="pill r">识别出错</span>`;
+  else s+=`<span class="pill y">识别中…</span>`;
+  if(i.ai_status==='writing') s+=` <span class="pill y">AI 写作中…</span>`;
+  else if(i.ai_status==='error') s+=` <span class="pill r">AI 出错</span>`;
+  if(i.publish_status==='done') s+=` <span class="pill g">已发布 #${i.record_id}</span>`;
+  else if(i.publish_status==='publishing') s+=` <span class="pill y">发布中…</span>`;
+  else if(i.publish_status==='error') s+=` <span class="pill r">发布失败</span>`;
+  else if(i.publish_status==='uncertain') s+=` <span class="pill y">发布结果待核对</span>`;
+  return s;
+}
+function itemIndicators(i){
+  if(i.indicators){ try{ const v=JSON.parse(i.indicators); if(Array.isArray(v)) return v; }catch(e){} }
+  if(i.indicator_id){ const ind=S.indicators.find(x=>x.id===i.indicator_id);
+    if(ind) return [{indicator_id:ind.id,indicator_name:ind.name,domain:ind.domain,subdomain:ind.subdomain,behavior_line:i.behavior_line||''}]; }
+  return [];
+}
+function itemModules(i){ if(i.modules){ try{ const v=JSON.parse(i.modules); if(Array.isArray(v)) return v; }catch(e){} } return []; }
+function itemStuIds(i){
+  if(i.student_ids){ try{ const v=JSON.parse(i.student_ids); if(Array.isArray(v)&&v.length) return v.map(Number); }catch(e){} }
+  return i.student_id?[i.student_id]:[];
+}
+function itemPhotoCount(i){ let n=1; if(i.paths){ try{ const v=JSON.parse(i.paths); if(Array.isArray(v)) n+=v.length; }catch(e){} } return n; }
+function siblingsOf(i){ if(!i.group_key||!S.batch) return []; return S.batch.items.filter(x=>x.group_key===i.group_key); }
+// ---------- 看大图 ----------
+// 卡片上那张只是缩略图，老师要确认"这张到底是不是他"的时候看不清。
+// 点一下铺满屏幕，多张的左右翻，Esc 或点空白关掉。
+let _lb={id:null,idx:0,n:1};
+function viewPhoto(id,idx){
+  _lb={id:id,idx:idx||0,n:1};
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+  _lb.n=it?itemPhotoCount(it):1;
+  let m=$('#lightbox');
+  if(!m){
+    m=document.createElement('div'); m.id='lightbox';
+    m.style.cssText='position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column';
+    m.onclick=e=>{ if(e.target===m) closeLb() };
+    document.body.appendChild(m);
+    document.addEventListener('keydown',lbKey);
+  }
+  drawLb();
+}
+function drawLb(){
+  const m=$('#lightbox'); if(!m) return;
+  const many=_lb.n>1;
+  m.innerHTML=`
+    <img src="/api/item/${_lb.id}/image?idx=${_lb.idx}" style="max-width:92vw;max-height:82vh;object-fit:contain;border-radius:10px;background:#111">
+    <div style="margin-top:14px;display:flex;align-items:center;gap:14px;color:#fff;font-size:14px">
+      ${many?`<button class="btn" onclick="lbStep(-1)">‹ 上一张</button>`:''}
+      <span>${many?`第 ${_lb.idx+1} / ${_lb.n} 张`:'点空白处关闭'}</span>
+      ${many?`<button class="btn" onclick="lbStep(1)">下一张 ›</button>`:''}
+      <button class="btn w" onclick="linkPhoto(_lb.id,_lb.idx)">⇢ 这张也挂到别的记录</button>
+      <button class="btn" onclick="closeLb()">✕ 关闭</button>
+    </div>`;
+}
+function lbStep(d){ _lb.idx=(_lb.idx+d+_lb.n)%_lb.n; drawLb(); }
+function closeLb(){ const m=$('#lightbox'); if(m){ m.remove(); document.removeEventListener('keydown',lbKey); } }
+function lbKey(e){
+  if(e.key==='Escape') return closeLb();
+  if(e.key==='ArrowLeft') return lbStep(-1);
+  if(e.key==='ArrowRight') return lbStep(1);
+}
+
+// 合并是把几条并成一条；这里正相反 —— 一张合影，三个孩子各写各的一条，照片是同一张。
+// 底下不复制文件，只是让几条记录指向同一张图。
+async function linkPhoto(iid,idx){
+  closeLb();                       // 灯箱是 z-index 9999，压在弹窗上面 —— 不先关掉，弹窗点不着
+  const b=S.batch; if(!b) return;
+  const others=b.items.filter(x=>x.id!==iid&&x.publish_status!=='done');
+  if(!others.length) return toast('这一批里没有别的记录可以挂','err');
+  const me=b.items.find(x=>x.id===iid)||{};
+  const row=x=>`<label class="row" style="gap:10px;padding:6px 4px;border-top:1px solid #eee;cursor:pointer">
+      <input type="checkbox" class="lkChk" value="${x.id}">
+      <img src="/api/item/${x.id}/image" style="width:46px;height:46px;object-fit:cover;border-radius:6px">
+      <span class="grow"><b>${esc(x.student_name||'还没认出是谁')}</b>
+        <span class="hint">${esc((x.teacher_note||'').slice(0,24))}</span></span>
+      <span class="hint">已有 ${itemPhotoCount(x)} 张</span></label>`;
+  modal(`<h3 style="margin:0 0 8px">这张照片还要挂给谁</h3>
+    <p class="hint" style="margin:0 0 10px">挂过去的是<b>同一张</b>照片，不是复制一份。哪条删掉了，只要还有别人用着，图就不会丢。
+      一条最多 6 张，满了的会跳过。</p>
+    <div style="max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px 8px">${others.map(row).join('')}</div>
+    <label class="row" style="margin-top:10px;gap:6px">
+      <input type="checkbox" id="lkStu" ${(me.student_name||'').includes('、')?'':'disabled'}>
+      <span class="hint">顺便把这张照片里认出的孩子（${esc(me.student_name||'—')}）也加到那几条上</span></label>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn p" id="lkGo" onclick="doLinkPhoto(${iid},${idx})">挂过去</button></div>`);
+}
+async function doLinkPhoto(iid,idx){
+  const targets=[...document.querySelectorAll('.lkChk')].filter(x=>x.checked).map(x=>+x.value);
+  if(!targets.length) return toast('先勾几条','err');
+  const b=$('#lkGo'); b.disabled=true; b.innerHTML='<span class="spin"></span> 挂…';
+  try{
+    const r=await api('/api/item/'+iid+'/photo/link',{method:'POST',
+      json:{idx:idx,targets:targets,with_students:!!($('#lkStu')&&$('#lkStu').checked)}});
+    const bits=[`挂到 ${r.linked.length} 条`];
+    if(r.already&&r.already.length) bits.push(`${r.already.length} 条本来就有`);
+    if(r.full&&r.full.length) bits.push(`${r.full.length} 条已经满 6 张，跳过了`);
+    toast(bits.join('，'),'ok'); closeModal(); await refreshBatch(S.batch.id);
+  }catch(e){ toast(e.message,'err'); b.disabled=false; b.innerHTML='挂过去'; }
+}
+async function splitItem(iid){
+  if(!confirm('把这条按孩子拆成几条？\n照片几条共用（不复制），每个孩子可以各挑各的指标、各写各的评价。\n原来写好的文字会清空重写。')) return;
+  try{
+    const r=await api('/api/item/'+iid+'/split',{method:'POST'});
+    toast(`拆成了 ${r.count} 条`,'ok'); await refreshBatch(S.batch.id);
+  }catch(e){ toast(e.message,'err') }
+}
+
+function photoStrip(i,pub){
+  const n=itemPhotoCount(i); let th='';
+  for(let k=1;k<n;k++) th+=`<div class="th"><img src="/api/item/${i.id}/image?idx=${k}&_=${Math.floor(i.updated_at||0)}" style="cursor:zoom-in" title="点一下看大图" onclick="viewPhoto(${i.id},${k})">${pub?'':`<div class="x" title="去掉这张" onclick="delItemPhoto(${i.id},${k})">✕</div>`}</div>`;
+  const add = pub?'':`<div class="th" style="display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px dashed var(--line);color:var(--muted);font-size:22px" title="再加一张：他的另一张照片，或者他做出来的作品、画、搭的东西" onclick="pickItemPhotos(${i.id})">＋</div>`;
+  return `<div class="thumbs" style="margin-top:8px;gap:6px">${th}${add}</div>
+    <div class="hint" style="margin-top:4px">${n>1?`这条记录挂了 ${n} 张照片，AI 会当成一件事一起看`:'可以再加几张（他的另一张照片，或者他的作品）'}${pub?'':'　·　点开大图可以把某一张<b>同时挂到别的记录</b>上'}</div>`;
+}
+function pickItemPhotos(id){
+  let f=document.getElementById('itemPhotoInput');
+  if(!f){ f=document.createElement('input'); f.type='file'; f.id='itemPhotoInput'; f.multiple=true; f.accept='image/*'; f.style.display='none'; document.body.appendChild(f); }
+  f.value=''; f.onchange=async()=>{ const fs=[...f.files]; if(!fs.length) return;
+    const fd=new FormData(); fs.forEach(x=>fd.append('files',x,x.name));
+    try{ const r=await api('/api/item/'+id+'/photos',{method:'POST',form:fd}); toast(`加了 ${r.added} 张，这条一共 ${r.total} 张`,'ok'); refreshBatch(S.batch.id); }
+    catch(e){ toast(e.message,'err') } };
+  f.click();
+}
+async function delItemPhoto(id,idx){ try{ await api('/api/item/'+id+'/photo?idx='+idx,{method:'DELETE'}); refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function delItem(id){
+  const it=S.batch.items.find(x=>x.id===id)||{};
+  if(!confirm(`将这一条${it.student_name?'（'+it.student_name+'）':''}移入本机回收站？\n已发布到幼师口袋的记录不受影响，可在「历史批次 → 回收站」恢复。`)) return;
+  try{ await flushItemEdits([id]); await api('/api/item/'+id,{method:'DELETE'}); toast('已移入回收站，网站记录不受影响','ok'); S._plan=null; refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') }
+}
+async function setLen(v){ try{ await api('/api/batch/'+S.batch.id+'/length',{method:'POST',json:{length:v}}); toast('篇幅已改成「'+LEN_CN[v]+'」，下次生成就按这个来','ok'); refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+
+const CLASS_LABEL={1:'小班',3:'中班',5:'大班',128:'托班（24—36个月）'};
+const BAND_CN={1:'表现行为一（小班）',3:'表现行为三（中班）',5:'表现行为五（大班）',128:'托育体系 · 24—36个月'};
+const GRADE_CN={1:'表现行为一',2:'表现行为二',3:'表现行为三',4:'表现行为四',5:'表现行为五',128:'24—36个月'};
+const GRADE_TIP={1:'小班水平',2:'超过小班，还不到中班',3:'中班水平',4:'超过中班，还不到大班',5:'大班水平',128:'托育体系 · 24—36个月'};
+function pickLines(p){
+  const d=(S.cls&&S.cls.level)||5;
+  if(d!==128&&[2,4].includes(+p.grade)) return [];
+  if(Array.isArray(p.behavior_lines)&&p.behavior_lines.length)
+    return p.behavior_lines.map(x=>{ if(typeof x==='string') return {level:d,line:x,grade:d};
+      const lv=+x.level||d; return {level:lv,line:x.line,grade:+x.grade||lv}; });
+  return p.behavior_line?[{level:d,line:p.behavior_line,grade:d}]:[];
+}
+function lineRows(i,k,p,pub,sid){
+  const ind=S.indicators.find(x=>x.id===p.indicator_id); if(!ind) return '';
+  const cur=(S.cls&&S.cls.level)||5;
+  if(cur!==128&&[2,4].includes(+p.grade))
+    return `<p class="hint" style="margin:5px 0 10px 8px">${GRADE_CN[+p.grade]}没有具体表现指标，无需勾选原句。</p>`;
+  const on=pickLines(p);
+  const [bg,fg]=domColor(ind.domain);
+  const got=(lv,l)=>on.find(x=>x.level===lv&&x.line===l);
+  const box=(lv,l)=>{
+    const g=got(lv,l);
+    const opts=cur===128?[128]:[lv-1,lv,lv+1].filter(x=>x>=1&&x<=5);
+    const grade=g?`<select class="inp" style="width:auto;font-size:11px;padding:1px 3px;margin-left:4px"
+        ${pub?'disabled':''} onchange="setGrade(${i.id},${k},${lv},this.dataset.l,this.value,${sid||0})" data-l="${esc(l)}">
+        ${opts.map(x=>`<option value="${x}" ${g.grade===x?'selected':''}>${GRADE_CN[x]}</option>`).join('')}
+      </select>`:'';
+    return `<label style="display:flex;gap:6px;align-items:flex-start;padding:3px 6px;border-radius:7px;
+        cursor:${pub?'default':'pointer'};line-height:1.5;font-size:12.5px;${g?`background:${bg}`:''}">
+      <input type="checkbox" style="margin-top:3px" ${g?'checked':''} ${pub?'disabled':''}
+        onchange="toggleLine(${i.id},${k},${lv},this.dataset.l,this.checked,${sid||0})" data-l="${esc(l)}">
+      <span>${esc(l)}${g&&g.grade!==lv?`<span class="pill y" style="margin-left:4px">按${GRADE_CN[g.grade]}报</span>`:''}${grade}</span></label>`;
+  };
+  const mine=(ind.lines||[]).map(l=>box(cur,l)).join('')||'<span class="hint">（这个档位没有列表现行为）</span>';
+  const others=(cur===128?[]:[1,3,5]).filter(lv=>lv!==cur).map(lv=>{
+    const ls=((ind.all_lines||{})[lv]||[]); if(!ls.length) return '';
+    return `<div class="hint" style="margin:6px 0 2px">${BAND_CN[lv]}</div>${ls.map(l=>box(lv,l)).join('')}`;
+  }).join('');
+  const extra=on.filter(x=>x.level!==cur).length;
+  return `<div style="margin:2px 0 8px 8px;border-left:3px solid ${fg}44;padding-left:8px">
+    ${mine}
+    ${others?`<details ${extra?'open':''} style="margin-top:4px"><summary class="hint" style="cursor:pointer">其他档位${extra?`（已勾 ${extra} 条）`:''}</summary>${others}</details>`:''}
+  </div>`;
+}
+function indRows(i,picks,pub,sid){
+  return picks.map((p,k)=>{
+    const ind=S.indicators.find(x=>x.id===p.indicator_id)||{};
+    const [bg,fg]=domColor(ind.domain);
+    const n=pickLines(p).length;
+    const intermediate=(S.cls&&S.cls.level)!==128&&[2,4].includes(+p.grade);
+    const band=(S.cls&&S.cls.level)===128?'':`<select class="inp" aria-label="能力项表现档位" style="width:auto;font-size:12px;padding:3px 6px"
+      ${pub?'disabled':''} onchange="setIndicatorGrade(${i.id},${k},this.value,${sid||0})">
+      <option value="" ${!intermediate?'selected':''}>勾选具体表现</option>
+      ${[2,4].map(g=>`<option value="${g}" ${+p.grade===g?'selected':''}>${GRADE_CN[g]}（无需具体指标）</option>`).join('')}</select>`;
+    return `<div style="margin-bottom:5px">
+      <div class="row" style="gap:6px;align-items:center">
+        <span style="background:${bg};color:${fg};border-radius:7px;padding:2px 8px;font-weight:600;font-size:12.5px">${esc(p.indicator_name||'')}</span>
+        <span class="pill ${n||intermediate?'g':'y'}">${intermediate?GRADE_CN[+p.grade]:(n?'勾了 '+n+' 条':'请选择表现行为')}</span>${band}
+        <span class="grow"></span>
+        ${pub?'':`<button class="btn xs d" title="删掉这条指标" onclick="delInd(${i.id},${k},${sid||0})">✕</button>`}
+      </div>
+      ${lineRows(i,k,p,pub,sid)}
+    </div>`;
+  }).join('');
+}
+function indBlock(i,picks,pub){
+  const rows=indRows(i,picks,pub,0);
+  const add = pub ? '' :
+    `<button class="btn xs" onclick="addIndPick(${i.id})">＋ 加指标</button>
+     ${picks.length?`<button class="btn xs d" style="margin-left:6px" onclick="clearInd(${i.id})">清空</button>`:''}
+     ${picks.length&&selCount()>1?`<button class="btn xs b" style="margin-left:6px" title="把这一条的指标整份复制给其他选中的记录" onclick="pasteInd(${i.id})">⇲ 粘给选中的 ${selCount()-(selSet().has(i.id)?1:0)} 条</button>`:''}`;
+  return `<div class="ind" style="display:block">${rows||'<span class="hint">还没有指标——AI 按实录证据关联适用指标，也可以由老师选择。</span><br>'}${add}</div>`;
+}
+async function pasteInd(srcId){
+  const ids=[...selSet()].filter(x=>x!==srcId);
+  if(!ids.length) return toast('先在别的卡片左上角勾几条，再点这个','err');
+  if(!confirm(`把这一条的指标（连同勾好的表现行为）整份复制给另外 ${ids.length} 条？\n它们原来的指标会被覆盖。`)) return;
+  try{ const r=await api('/api/batch/'+S.batch.id+'/bulk',{method:'POST',json:{item_ids:ids,action:'copy_indicators',value:srcId}});
+    toast(`已经对齐 ${r.changed} 条`,'ok'); S._plan=null; await refreshBatch(S.batch.id); }
+  catch(e){ toast(e.message,'err') }
+}
+function addIndPick(id,sid){
+  const it=S.batch.items.find(x=>x.id===id);
+  const cur=sid?stuPicks(it,sid):itemIndicators(it);
+  pickIndicator((v,line)=>addInd(id,v,line,sid), sid?('加给这条记录里的这个孩子'):'加给这一条记录', cur.map(p=>p.indicator_id));
+}
+/* ---- 一条记录里，每个孩子各自的指标 ---- */
+function stuIndMap(i){ if(i.stu_indicators){ try{ return JSON.parse(i.stu_indicators)||{}; }catch(e){} } return {}; }
+function stuPicks(i,sid){ const m=stuIndMap(i); const v=m[String(sid)]||m[sid]; return (Array.isArray(v)&&v.length)?v:itemIndicators(i); }
+function stuOwn(i,sid){ const m=stuIndMap(i); const v=m[String(sid)]||m[sid]; return Array.isArray(v)&&v.length; }
+function kidsBlock(i,pub){
+  const ids=itemStuIds(i);
+  if(ids.length<=1) return '';
+  return `<div style="margin:8px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden">
+    <div class="hint" style="padding:6px 10px;background:var(--y2);color:#7a5200">
+      这张照片里认出 <b>${ids.length}</b> 个孩子，发布时是<b>一条记录挂 ${ids.length} 个孩子</b>。
+      下面可以给每个人单独挑指标；不单独挑就跟上面整条的一样。</div>
+    ${ids.map((sid,n)=>{
+      const s=S.students.find(x=>x.student_id===sid)||{};
+      const own=stuOwn(i,sid), picks=stuPicks(i,sid);
+      return `<div style="padding:8px 10px;border-top:1px solid var(--line)">
+        <div class="row" style="gap:8px;align-items:center">
+          <img src="/api/item/${i.id}/face?idx=${n}&kind=stu" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line)">
+          <b>${esc(s.name||('#'+sid))}</b>${s.nickname?`<span class="pill">小名 ${esc(s.nickname)}</span>`:''}
+          <span class="pill ${own?'b':''}">${own?'单独挑了指标':'跟整条一样'}</span>
+          <span class="grow"></span>
+          ${pub?'':`<button class="btn xs" onclick="addIndPick(${i.id},${sid})">＋ 给他加指标</button>
+          ${own?`<button class="btn xs" onclick="resetStuInd(${i.id},${sid})">改回跟整条一样</button>`:''}
+          <button class="btn xs d" onclick="delStu(${i.id},${sid})">不评他了</button>`}
+        </div>
+        ${own?`<div style="margin-top:6px">${indRows(i,picks,pub,sid)}</div>`:''}
+      </div>`;}).join('')}
+  </div>`;
+}
+async function saveStuPicks(id,sid,picks){
+  try{ await api('/api/item/'+id+'/student_indicators',{method:'POST',json:{student_id:sid,picks}});
+    S._plan=null; await refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') }
+}
+async function resetStuInd(id,sid){ try{ await api('/api/item/'+id+'/student_indicators',{method:'POST',json:{student_id:sid,picks:null}}); S._plan=null; await refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+/* ---- 待指认的脸 ---- */
+const faceAssignBusy=new Set();
+function faceCandidate(i,f){
+  const sid=Number(f.candidate_id);
+  return Number.isSafeInteger(sid)&&sid>0&&!itemStuIds(i).includes(sid)
+    ? S.students.find(s=>Number(s.student_id)===sid) : null;
+}
+function pendingBlock(i,pub){
+  let pend=[]; if(i.pending_faces){ try{ pend=JSON.parse(i.pending_faces)||[]; }catch(e){} }
+  if(!Array.isArray(pend)||!pend.length||pub) return '';
+  const busy=faceAssignBusy.has(i.id);
+  return `<div style="margin:8px 0;padding:8px 10px;border:1px dashed #e0a800;border-radius:12px;background:#fffdf3">
+    <div class="hint" style="color:#7a5200;margin-bottom:6px">还有 <b>${pend.length}</b> 张脸待确认。认对了直接点「选用」，也可以改选；不是本班的点「不要」。</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${pend.map(f=>{const candidate=faceCandidate(i,f);return `<div data-face-item="${i.id}" style="text-align:center;min-width:130px;max-width:220px;padding:6px" onclick="event.stopPropagation()">
+        <img src="/api/item/${i.id}/face?idx=${f.idx}&kind=pending" style="width:64px;height:64px;border-radius:10px;object-fit:cover;border:2px solid #e0a800">
+        <div class="hint" style="margin:3px 0">${f.candidate_name?('疑似 '+esc(f.candidate_name)+' · '):''}${esc(String(f.score==null?'':f.score))}分</div>
+        ${candidate?`<button type="button" class="btn xs p" style="display:block;max-width:100%;margin:5px auto;white-space:normal" ${busy?'disabled':''} onclick="useFaceCandidate(event,${i.id},${f.idx},${Number(candidate.student_id)})">选用 ${esc(candidate.name)}</button>`:''}
+        <button type="button" class="btn xs ${candidate?'':'p'}" ${busy?'disabled':''} onclick="pickFace(${i.id},${f.idx})">${candidate?'改选其他孩子':'是谁？'}</button>
+        <button type="button" class="btn xs d" ${busy?'disabled':''} onclick="dropFace(${i.id},${f.idx})">不要</button>
+      </div>`;}).join('')}
+    </div></div>`;
+}
+async function assignPendingFace(id,idx,sid,button){
+  if(faceAssignBusy.has(id)) return;
+  faceAssignBusy.add(id);
+  const label=button&&button.textContent;
+  if(button) button.textContent='正在选用…';
+  document.querySelectorAll(`[data-face-item="${id}"] button`).forEach(b=>b.disabled=true);
+  const bid=S.batch.id;
+  try{
+    await api('/api/item/'+id+'/face_assign',{method:'POST',json:{face_idx:idx,...(sid?{student_id:sid}:{})}});
+    toast(sid?'已选用这个孩子':'已移除这张待确认的脸','ok'); S._plan=null;
+    if(S.batch&&S.batch.id===bid) await refreshBatch(bid);
+  }catch(e){ toast(e.message,'err') }
+  finally{
+    faceAssignBusy.delete(id);
+    if(button) button.textContent=label;
+    document.querySelectorAll(`[data-face-item="${id}"] button`).forEach(b=>b.disabled=false);
+  }
+}
+function useFaceCandidate(event,id,idx,sid){
+  event.preventDefault(); event.stopPropagation();
+  const it=S.batch.items.find(x=>x.id===id);
+  if(!it) return toast('记录已变化，请刷新后重试','err');
+  let faces=[]; try{faces=JSON.parse(it.pending_faces||'[]')}catch(e){}
+  const face=Array.isArray(faces)&&faces.find(f=>Number(f.idx)===idx), candidate=face&&faceCandidate(it,face);
+  if(!candidate||Number(candidate.student_id)!==sid) return toast('候选已变化，请改选孩子或刷新后重试','err');
+  return assignPendingFace(id,idx,sid,event.currentTarget);
+}
+function pickFace(id,idx){
+  if(faceAssignBusy.has(id)) return;
+  const it=S.batch.items.find(x=>x.id===id);
+  pickStudent(sid=>assignPendingFace(id,idx,sid),'这张脸是哪个孩子',itemStuIds(it));
+}
+async function dropFace(id,idx){
+  await assignPendingFace(id,idx);
+}
+
+function modBlock(i,mods,pub){
+  const chips=mods.map((m,k)=>`<span class="pill b" style="padding-right:4px">${esc(m.realm)}·${esc(m.module)}${pub?'':` <a href="#" style="text-decoration:none;color:#b3261e" onclick="delMod(${i.id},${k});return false">✕</a>`}</span>`).join(' ');
+  const add = pub?'':`<button class="btn xs" onclick="pickRealm(v=>addMod(${i.id},v.realm+'|'+v.module),'加给这一条记录')">＋ 关联领域</button>`;
+  return `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0">
+    <span class="hint">关联领域</span>${chips||'<span class="hint">（无）</span>'}${add}</div>`;
+}
+function stuBlock(i,pub){
+  const ids=itemStuIds(i);
+  const chips=ids.map((sid,k)=>{ const s=S.students.find(x=>x.student_id===sid);
+    return `<span class="pill ${k===0?'g':'b'}" style="padding-right:4px">${esc(s?s.name:('#'+sid))}${s&&s.nickname?'（'+esc(s.nickname)+'）':''}${(pub||ids.length<2)?'':` <a href="#" style="text-decoration:none;color:#b3261e" title="不评这个孩子了" onclick="delStu(${i.id},${sid});return false">✕</a>`}</span>`;
+  }).join(' ');
+  const sel=`<select class="inp" style="width:auto" ${pub?'disabled':''} onchange="setStu(${i.id},this.value)"><option value="">— 换成谁 —</option>${stuOptsHtml()}</select>`;
+  const add=pub?'':`<button class="btn xs" onclick="addStuPick(${i.id})">＋ 再评一个孩子</button>`;
+  return `<div class="who" style="flex-wrap:wrap">${chips||'<b>？</b>'}${sel}${add}
+    <span class="pill">${{1:'表现行为一',3:'表现行为三',5:'表现行为五'}[i.level||S.cls.level]}</span></div>
+    ${ids.length>1?'<div class="hint" style="margin:-2px 0 6px">这一条会发成<b>一条记录</b>，同时挂上这 '+ids.length+' 个孩子，每人各打一份指标。</div>':''}`;
+}
+function addStuPick(id){ const it=S.batch.items.find(x=>x.id===id); pickStudent(sid=>addStu(id,sid),'这条记录再评一个孩子',itemStuIds(it)); }
+async function setStus(id,ids){ try{ await api('/api/item/'+id+'/students',{method:'POST',json:{student_ids:ids}}); S._plan=null; await refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function addStu(id,sid){ const it=S.batch.items.find(x=>x.id===id); const ids=itemStuIds(it); if(ids.includes(+sid)) return; ids.push(+sid); await setStus(id,ids); toast('这条记录现在评 '+ids.length+' 个孩子','ok'); }
+async function delStu(id,sid){ const it=S.batch.items.find(x=>x.id===id); await setStus(id,itemStuIds(it).filter(x=>x!==+sid)); }
+
+function isTable(){ return !!(S.batch&&S.batch.mode==='table'); }
+function cleanTableSystemNotices(value,labels){
+  // Only migrate exact system notices at paragraph starts; teacher quotations remain verbatim.
+  const space='[\\s\\u200b-\\u200d\\u2060\\ufeff]*', indent='[ \\t\\f\\v\\u00a0\\u1680\\u2000-\\u200d\\u202f\\u205f\\u2060\\u3000\\ufeff]*';
+  const names=labels.map(label=>label.split('').join(space)).join('|');
+  const notice=new RegExp('^(?:'+indent+'[（(]'+space+'(?:'+names+')'+space+'[，,、]'+space+'待老师确认'.split('').join(space)+space+'[）)]'+indent+'(?:\\r?\\n)?)+','gm');
+  const quoted=/“[^”]*”|「[^」]*」|『[^』]*』|‘[^’]*’|"[^"]*"/g, spans=[];
+  let match; while((match=quoted.exec(value))) spans.push([match.index,match.index+match[0].length]);
+  let removed=false;
+  const text=value.replace(notice,(part,offset)=>{
+    if(spans.some(span=>span[0]<offset+part.length&&offset<span[1])) return part;
+    removed=true;return '';
+  }).trim();
+  return {text,removed};
+}
+function cleanAnalysisNotice(value){
+  return cleanTableSystemNotices(value,['结合补写情境的分析']).text;
+}
+function cleanTableAnalysisNotices(table){
+  if(!table||typeof table!=='object'||Array.isArray(table)) return table;
+  const result={...table};
+  const clean=value=>{
+    const migrated=cleanTableSystemNotices(value,['情境补写','推测','结合补写情境的分析']);
+    if(migrated.removed) result['情境补写']=true;
+    return migrated.text;
+  };
+  ['观察内容','依据对应实录','分析','依据对应分析','家庭指导'].forEach(key=>{if(typeof result[key]==='string') result[key]=clean(result[key]);});
+  if(Array.isArray(result['行为跟进'])) result['行为跟进']=result['行为跟进'].map(value=>typeof value==='string'?clean(value):value);
+  if(Array.isArray(result['自定义段落'])) result['自定义段落']=result['自定义段落'].map(section=>section&&typeof section.content==='string'?{...section,content:clean(section.content)}:section);
+  return result;
+}
+function tableFollowText(values){
+  const parts=(Array.isArray(values)?values:[]).filter(value=>typeof value==='string')
+    .map(value=>value.replace(/(^|\n)\s*\d+[.、)]\s*/g,'$1').replace(/\s*\n+\s*/g,' ').trim()).filter(Boolean);
+  return parts.reduce((text,part)=>text+(text&&!/[。！？；]$/.test(text)?'；':'')+part,'');
+}
+function itemTable(i){ if(i.table_json){ try{ return cleanTableAnalysisNotices(JSON.parse(i.table_json))||{}; }catch(e){} } return {}; }
+function tableSectionLabel(key){ return {'观察内容':'观察实录','分析':'观察分析','行为跟进':'回应策略'}[key]||key; }
+function tableBlock(i,pub){
+  const t=tableForEdit(i);
+  pub=pub||itemRewrites.has(i.id)||['done','publishing','uncertain'].includes(i.publish_status);
+  const buttons=k=>pub?'':`<span style="float:right">
+      <button class="btn xs" title="只重写这一段，其他文字不动" data-key="${esc(k)}" onclick="askRewrite(${i.id},this.dataset.key)">↻ 重写这一段</button>
+      ${k==='观察内容'?'':`<button class="btn xs d" data-key="${esc(k)}" onclick="removeTableSection(${i.id},this.dataset.key)">删除段落</button>`}</span>`;
+  const fld=(k,rows,ph,value,heading)=>`<div style="margin-bottom:8px">
+    <div class="hint" style="margin-bottom:3px">${heading||`<b>${esc(tableSectionLabel(k))}</b>`}${buttons(k)}</div>
+    <textarea class="inp tb" data-i="${i.id}" data-k="${esc(k)}" rows="${rows}" ${pub?'disabled':''}
+      placeholder="${ph}" oninput="draftTable(${i.id})" onchange="saveTable(${i.id}).catch(e=>toast(e.message,'err'))" style="min-height:auto">${esc(value||'')}</textarea></div>`;
+  const choice=k=>!(k in t)?'':`<div style="margin-bottom:12px"><div class="row"><b>${k}</b><span class="grow"></span>${pub?'':`<button class="btn xs" data-key="${k}" onclick="openTableOptions(${i.id},this.dataset.key)">选择</button><button class="btn xs d" data-key="${k}" onclick="removeTableSection(${i.id},this.dataset.key)">删除栏目</button>`}</div><div style="margin-top:5px">${(t[k]||[]).map(o=>`<span class="pill">${esc(o.groupLabel?o.groupLabel+' · ':'')}${esc(o.value)}</span>`).join(' ')||'<span class="hint">未选择</span>'}</div></div>`;
+  const menu=[['观察场景','观察场景'],['关联活动','关联活动'],['行为表现','行为表现'],['分析','观察分析'],['行为跟进','回应策略'],['家庭指导','家庭指导']];
+  const exists=k=>k==='行为表现'?t[k]!==false:k in t;
+  const first=(menu.find(([k])=>!exists(k))||[])[0];
+  return `<div id="tableSections${i.id}">
+    ${choice('观察场景')}${choice('关联活动')}
+    ${!pub&&t['情境补写']===true?'<div class="hint" data-role="reconstruction-review" style="margin-bottom:8px">部分情节由 AI 补全，请核对行为和对话后再审核通过。</div>':''}
+    ${fld('观察内容',7,i.ai_status==='writing'?'AI 正在写……':'直接记录看到的动作和老师补充的情况',t['观察内容'])}
+    ${'分析' in t?fld('分析',5,'结合实录和适龄参考，说明已有经验、遇到的问题及所需支持',t['分析'],'<b>观察分析</b>（仅教师可见）'):''}
+    ${'分析' in t?Knowledge.evidenceHtml(t):''}
+    ${'行为跟进' in t?fld('行为跟进',3,'一段写清下次怎样支持、再看什么变化，100字以内',tableFollowText(t['行为跟进']),'<b>回应策略</b>（一段，100字以内，仅教师可见）'):''}
+    ${'家庭指导' in t?fld('家庭指导',4,'AI 将根据观察实录生成家庭指导',t['家庭指导'],'<b>家庭指导</b>（同步给家长时可见）'):''}
+    ${(t['自定义段落']||[]).map(s=>fld('custom:'+s.id,4,'这一段的内容',s.content,`<input class="inp tb-title" data-i="${i.id}" data-custom="${esc(s.id)}" value="${esc(s.title)}" maxlength="20" ${pub?'disabled':''} placeholder="段落标题" aria-label="自定义段落标题" oninput="draftTable(${i.id})" onchange="saveTable(${i.id}).catch(e=>toast(e.message,'err'))" style="width:180px;max-width:100%;font-weight:600">（同步给家长时可见）`)).join('')}
+    ${pub?'':`<div class="row" style="gap:8px;margin-bottom:12px"><select class="inp" id="tbAdd${i.id}" style="width:auto" aria-label="选择新增段落">
+      ${menu.map(([k,label])=>`<option value="${k}" ${exists(k)?'disabled':''} ${k===first?'selected':''}>${label}${exists(k)?'（已添加）':''}</option>`).join('')}
+      </select><button class="btn sm" ${first?'':'disabled'} onclick="addTableSection(${i.id},$('#tbAdd${i.id}').value)">＋ 新增栏目</button></div>`}</div>`;
+}
+function tableBehaviorBlock(i,pub){
+  pub=pub||itemRewrites.has(i.id)||['done','publishing','uncertain'].includes(i.publish_status);
+  const enabled=tableForEdit(i)['行为表现']!==false;
+  return `<div id="tableBehavior${i.id}">${enabled?`<div class="row hint"><b>行为表现</b><span class="grow"></span>${pub?'':`<button class="btn xs d" onclick="removeTableSection(${i.id},'行为表现')">删除栏目</button>`}</div>${indBlock(i,itemIndicators(i),pub)}${kidsBlock(i,pub)}`:''}</div>`;
+}
+function tableForEdit(i){
+  const t=itemTable(i);
+  if(typeof t['观察内容']==='string') t['观察内容']=t['观察内容'].replace(/^\s*(?:(?:#{1,6}\s*)?(?:【观察内容】|\*\*观察内容\*\*)[：:\s]*|(?:#{1,6}\s*)?观察内容(?:[：:]\s*|\s*\n\s*))+/,'').trim();
+  return Object.keys(t).length?t:{'观察内容':'','分析':'','行为跟进':[]};
+}
+function tableSectionTitle(id,key){
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id)||{};
+  const t=tableForEdit({...it,...itemDrafts.get(id)});
+  return key.startsWith('custom:')?((t['自定义段落']||[]).find(s=>s.id===key.slice(7))||{}).title||'自定义段落':tableSectionLabel(key);
+}
+async function changeTableSections(id,key,remove,options){
+  try{
+    const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+    if(!it||itemRewrites.has(id)||['done','publishing','uncertain'].includes(it.publish_status)) throw new Error('当前记录正在生成或已经发布，请等待完成后再编辑。');
+    draftTable(id); // 先收集其他段落尚未失焦的文字，再修改结构。
+    const t=tableForEdit({...it,...itemDrafts.get(id)});
+    if(remove){
+      if(['分析','行为跟进','家庭指导','观察场景','关联活动'].includes(key)) delete t[key];
+      else if(key==='行为表现') t[key]=false;
+      else if(key.startsWith('custom:')) t['自定义段落']=(t['自定义段落']||[]).filter(s=>s.id!==key.slice(7));
+      else return;
+    }else if((key==='观察场景'||key==='关联活动')&&Array.isArray(options)) t[key]=options;
+    else if(key==='行为表现'&&t[key]===false) t[key]=true;
+    else if(['分析','行为跟进','家庭指导'].includes(key)&&!(key in t)) t[key]=key==='行为跟进'?[]:'';
+    else return;
+    delete t['观察目标'];
+    draftItem(id,'table_json',JSON.stringify(t));
+    const block=document.getElementById('tableSections'+id);
+    if(block) block.outerHTML=tableBlock({...it,...itemDrafts.get(id)},false);
+    const behavior=document.getElementById('tableBehavior'+id);
+    if(behavior) behavior.outerHTML=tableBehaviorBlock({...it,...itemDrafts.get(id)},false);
+    await saveItemEdits(id);
+    if(!remove&&['分析','行为跟进','家庭指导'].includes(key)&&(t['观察内容']||'').trim()){
+      toast('正在生成「'+tableSectionLabel(key)+'」…');
+      try{
+        await rewriteTableSection(id,key,'');
+        toast('「'+tableSectionLabel(key)+'」已生成','ok');
+      }catch(e){ toast('栏目已添加，AI 生成失败：'+e.message+'。可点「重写这一段」重试。','err'); }
+    }
+    return true;
+  }catch(e){ toast(e.message,'err'); }
+}
+function addTableSection(id,key){ return key==='观察场景'||key==='关联活动'?openTableOptions(id,key):changeTableSections(id,key,false); }
+function removeTableSection(id,key){ return changeTableSections(id,key,true); }
+let tableOptionsPicker=null;
+async function openTableOptions(id,key){
+  const fieldType={'观察场景':'SCENE_MULTI_SELECT','关联活动':'ACTIVITY_MULTI_SELECT'}[key];
+  if(!fieldType) return;
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+  if(!it||itemRewrites.has(id)||['done','publishing','uncertain'].includes(it.publish_status)) return toast('当前记录正在生成或已经发布，请等待完成后再编辑。','err');
+  draftTable(id);
+  const picker={id,key,options:[]}; tableOptionsPicker=picker;
+  modal(`<h2>选择${key}</h2><p class="hint">正在读取幼师口袋选项…</p><button class="btn" onclick="closeTableOptions()">取消</button>`);
+  try{
+    const data=await api('/api/table/field-options?field_type='+fieldType);
+    if(tableOptionsPicker!==picker) return;
+    const groups=(data.groups||[]).filter(g=>Array.isArray(g.options)&&g.options.length);
+    if(!groups.length) throw new Error('幼师口袋未返回可选内容');
+    const current=tableForEdit({...it,...itemDrafts.get(id)})[key]||[];
+    const rows=groups.map(g=>`<div style="margin:12px 0"><b>${esc(g.label)}</b><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">${g.options.map(o=>{
+      const option={...o,groupLabel:o.groupLabel||g.label}; const index=picker.options.push(option)-1;
+      const selected=current.some(x=>x.groupLabel===option.groupLabel&&x.value===option.value);
+      return `<label><input type="checkbox" value="${index}" ${selected?'checked':''}> ${esc(option.value)}</label>`;
+    }).join('')}</div></div>`).join('');
+    modal(`<h2>选择${key}</h2><p class="hint">可多选，选项来自幼师口袋。</p><div id="tableOptionsChoices">${rows}</div><div class="row" style="margin-top:14px"><button class="btn p" id="tableOptionsSave" onclick="saveTableOptions()">确定</button><button class="btn" onclick="closeTableOptions()">取消</button></div>`);
+  }catch(e){
+    if(tableOptionsPicker!==picker) return;
+    modal(`<h2>读取${key}失败</h2><p class="bad">${esc(e.message)}。请先在设置中登录幼师口袋并同步，再重试。</p><button class="btn" data-key="${key}" onclick="openTableOptions(${id},this.dataset.key)">重试</button><button class="btn" onclick="closeTableOptions()">关闭</button>`);
+  }
+}
+function closeTableOptions(){ tableOptionsPicker=null; closeModal(); }
+async function saveTableOptions(){
+  const picker=tableOptionsPicker; if(!picker) return;
+  const options=Array.from(document.querySelectorAll('#tableOptionsChoices input:checked'),el=>picker.options[Number(el.value)]).filter(Boolean);
+  if(!options.length) return toast('请至少选择一项；不需要这一栏时可以删除栏目。','err');
+  const button=$('#tableOptionsSave'); if(button) button.disabled=true;
+  try{ if(await changeTableSections(picker.id,picker.key,false,options)){ if(tableOptionsPicker===picker) closeTableOptions(); } }
+  finally{ if(button) button.disabled=false; }
+}
+function askRewrite(id,key){
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+  if(!it||itemRewrites.has(id)||['done','publishing','uncertain'].includes(it.publish_status)) return toast('当前记录正在生成或已经发布，请等待完成后再编辑。','err');
+  modal(`<h2>重写「${esc(tableSectionTitle(id,key))}」</h2>
+    <p class="hint" style="margin:6px 0 10px">只重写这一段，其他几段、还有你自己改过的字，都原样留着。</p>
+    <textarea id="rwWant" class="inp" rows="3" style="min-height:auto"
+      placeholder="想让它怎么改？例如：补充老师记录的互动细节；分析与实录对应；删去无关的环境描写"></textarea>
+    <div id="rewriteProgress"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn p" id="rwGo" data-key="${esc(key)}" onclick="doRewrite(${id},this.dataset.key)">开始重写</button>
+      <span class="grow"></span>
+      <button class="btn" onclick="closeModal()">算了</button></div>`);
+  setTimeout(()=>{const e=$('#rwWant'); if(e) e.focus()},60);
+}
+async function doRewrite(id,key){
+  const b=$('#rwGo'), w=$('#rwWant');
+  const want=w?w.value.trim():'';
+  if(b){ b.disabled=true; b.textContent='正在重写…' }
+  try{
+    await rewriteTableSection(id,key,want);
+    closeModal(); toast('「'+tableSectionTitle(id,key)+'」重写好了');
+  }catch(e){
+    if(b){ b.disabled=false; b.textContent='再试一次' }
+    toast(e.message||'重写失败','err');
+  }
+}
+async function rewriteTableSection(id,key,want){
+  if(itemRewrites.has(id)) throw new Error('这条记录正在生成，请等待完成。');
+  await flushItemEdits([id]); // 先保留老师的全部输入，再锁住这一条，避免旧草稿覆盖生成结果。
+  if(itemRewrites.has(id)) throw new Error('这条记录正在生成，请等待完成。');
+  itemRewrites.add(id);
+  const stopProgress=ObservationAI.watch(id);
+  if(S.batch) renderBatch(S.batch);
+  try{
+    const result=await api('/api/item/'+id+'/table/rewrite',{method:'POST',json:{key:key,want:want,effort:ObservationAI.effort(((S.batch&&S.batch.items)||[]).find(i=>i.id===id)||{id})}});
+    const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+    if(it&&result.item) Object.assign(it,result.item);
+    else if(S.batch) await refreshBatch(S.batch.id);
+    return result;
+  }finally{
+    stopProgress();
+    itemRewrites.delete(id);
+    if(S.batch) renderBatch(S.batch);
+  }
+}
+function draftTable(id){
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+  if(!it||itemRewrites.has(id)||['done','publishing','uncertain'].includes(it.publish_status)) return;
+  const t=tableForEdit({...it,...itemDrafts.get(id)});
+  delete t['观察目标'];
+  document.querySelectorAll('.tb[data-i="'+id+'"],.tb-title[data-i="'+id+'"]').forEach(el=>{
+    if(el.disabled) return;
+    const k=el.dataset.k;
+    const customId=el.dataset.custom||(k&&k.startsWith('custom:')?k.slice(7):'');
+    if(customId){
+      const section=(t['自定义段落']||[]).find(s=>s.id===customId);
+      if(section) section[el.dataset.custom?'title':'content']=el.value.trim();
+    }else if(k==='行为跟进'&&k in t){ const paragraph=tableFollowText(el.value.split('\n'));t[k]=paragraph?[paragraph]:[]; }
+    else if(k==='观察内容'||(['分析','家庭指导'].includes(k)&&k in t)) t[k]=el.value.trim();
+  });
+  const value=JSON.stringify(cleanTableAnalysisNotices(t));
+  if(value!==JSON.stringify(itemTable(it))||'table_json' in (itemDrafts.get(id)||{})) draftItem(id,'table_json',value);
+}
+async function saveTable(id){ draftTable(id); await saveItemEdits(id); }
+function exportSel(){
+  const ids=[...selSet()]; if(!ids.length){ toast('先勾几条','err'); return; }
+  exportBatch(S.batch&&S.batch.id, ids);
+}
+async function exportBatch(bid,ids){
+  const id=bid||(S.batch&&S.batch.id); if(!id){ toast('先打开一个批次','err'); return; }
+  toast('正在生成 Word…');
+  try{
+    if(S.batch&&+S.batch.id===+id){
+      const selected=ids&&ids.length?new Set(ids.map(Number)):null;
+      await flushItemEdits(S.batch.items.filter(i=>(!selected||selected.has(i.id))&&!['done','publishing','uncertain'].includes(i.publish_status)).map(i=>i.id));
+    }
+    const j=await api('/api/batch/'+id+'/export'+((ids&&ids.length)?('?ids='+ids.join(',')):''));
+    S._lastExport=j;
+    modal(`<h2>导好了</h2>
+      <p style="margin:10px 0 4px">文件名：<b>${esc(j.name)}</b></p>
+      <p class="hint" style="margin:0">存在：${esc(j.dir_cn||j.dir)}</p>
+      <div class="row" style="margin-top:16px">
+        <button class="btn p" onclick="openExport()">打开文件夹看看</button>
+        <span class="grow"></span>
+        <button class="btn" onclick="closeModal()">知道了</button></div>`);
+  }catch(e){ toast(e.message,'err') }
+}
+async function openExport(rootOnly){
+  const path=rootOnly?'':((S._lastExport&&S._lastExport.path)||'');
+  try{ await api('/api/open-export',{method:'POST',json:{path:path}}); closeModal(); }
+  catch(e){ toast('打不开文件夹：'+e.message,'err') }
+}
+async function showExportDir(){
+  const el=$('#expDir'); if(!el) return;
+  try{ const j=await api('/api/export-dir'); el.textContent='导出的 Word 都放在这里：'+(j.dir_cn||j.dir); }
+  catch(e){}
+}
+function renderItem(i){
+  i=['done','publishing','uncertain'].includes(i.publish_status)?i:{...i,...itemDrafts.get(i.id)};
+  const uncertain=i.publish_status==='uncertain', publishing=i.publish_status==='publishing', rewriting=itemRewrites.has(i.id), pub=i.publish_status==='done'||publishing||uncertain||rewriting;
+  const picks=itemIndicators(i), mods=itemModules(i);
+  let warn='';
+  if(i.ai_status==='error') warn=`<div class="bad">AI 生成失败：${esc(i.ai_error)} <button class="btn xs" onclick="gen(${i.id})">重试</button></div>`;
+  else if(i.face_status==='error') warn=`<div class="bad">识别出错：${esc(i.ai_error||'')} <button class="btn xs" onclick="rescan(${i.id})">重新识别</button> 或在下面手动选孩子。</div>`;
+  else if(i.face_status==='pending'||!i.face_status) warn=`<div class="warn">正在识别…如果超过一分钟还没动静，点 <button class="btn xs" onclick="rescan(${i.id})">重新识别</button>，或直接在下面手动选孩子。</div>`;
+  else if(!i.student_id&&i.face_status!=='pending') warn=`<div class="warn">程序没认出这张照片里的孩子，请在下面选一下是谁。</div>`;
+  if(i.publish_status==='error') warn+=`<div class="bad">发布失败：${esc(i.publish_error)}</div>`;
+  if(pub) warn='';
+  if(uncertain) warn=`<div class="warn"><b>发布结果待核对</b>：${esc(i.publish_error||'服务器可能已保存这条记录。')} 请到幼师口袋网页核对，确认结果前不要重新发布。</div>`;
+  const hasText=isTable()? !!(i.table_json&&(itemTable(i)['观察内容']||'').trim()) : !!(i.text&&i.text.trim());
+  const groupTip='';
+  return `<div class="rev ${i.approved?'ok':''} ${pub?'pub':''}" id="it${i.id}" data-ai="${i.ai_status}" data-sig='${esc(itemSig(i))}'>
+    <div><div class="img" style="position:relative"><img src="/api/item/${i.id}/image" loading="lazy" style="cursor:zoom-in" title="点一下看大图" onclick="viewPhoto(${i.id},0)">
+      <label style="position:absolute;left:8px;top:8px;background:#fff;border-radius:8px;padding:3px 6px;box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:pointer">
+        <input type="checkbox" ${uncertain||rewriting?'disabled':''} ${selSet().has(i.id)?'checked':''} onchange="toggleSel(${i.id},this.checked)"></label></div>
+      ${photoStrip(i,pub)}
+      <div class="meta state">${stateHtml(i)}</div>
+      <div style="margin-top:8px">
+        <div class="hint" style="margin-bottom:3px">老师说明（写了 AI 会准很多）</div>
+        <textarea class="inp teacher-note" ${pub?'disabled':''} rows="5" placeholder="写活动事实、想怎么写、要匹配哪些指标。例如：新学期量身高，请关联身高和站姿指标；少用套话，写具体动作。" oninput="draftItem(${i.id},'teacher_note',this.value)" onchange="noteChange(${i.id},this.value).catch(e=>toast(e.message,'err'))" style="font-size:13px;min-height:96px;line-height:1.7">${esc(i.teacher_note||'')}</textarea>
+      </div></div>
+    <div>${warn}
+      ${stuBlock(i,pub)}
+      ${pendingBlock(i,pub)}
+      ${isTable()?'':kidsBlock(i,pub)}
+      <div class="row" style="gap:12px;align-items:center;margin:6px 0;flex-wrap:wrap">
+        <label class="hint" style="display:flex;align-items:center;gap:6px">日期
+          <input class="inp" type="date" style="width:150px" ${pub?'disabled':''} value="${esc(i.record_date||'')}" onchange="setDate(${i.id},this.value)"></label>
+        <label class="hint" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" ${((i.sync_parent===null||i.sync_parent===undefined)?1:i.sync_parent)?'checked':''} ${pub?'disabled':''} onchange="setSync(${i.id},this.checked)"> 同步给家长</label>
+      </div>
+      ${isTable()?tableBehaviorBlock(i,pub):indBlock(i,picks,pub)}
+      ${modBlock(i,mods,pub)}
+      ${i.behavior_desc&&(!isTable()||tableForEdit(i)['行为表现']!==false)?`<div class="hint" style="margin-bottom:6px">看到的行为：${esc(i.behavior_desc)}</div>`:''}
+      ${ObservationAI.itemProgress(i)}
+      ${isTable()?tableBlock(i,pub):`<textarea class="inp note-text" ${pub?'disabled':''} placeholder="${i.ai_status==='writing'?'AI 正在写……':'点下面的「AI 生成」，或者自己写'}" oninput="cnt(${i.id},this);draftItem(${i.id},'text',this.value)" onchange="saveText(${i.id},this.value).catch(e=>toast(e.message,'err'))">${esc(i.text||'')}</textarea>`}
+      <div class="foot">
+        ${uncertain?'<span class="hint">请到幼师口袋网页核对发布结果</span>':rewriting?'<span class="hint">AI 正在生成这一段，完成后可继续编辑…</span>':publishing?'<span class="hint">正在发布，请稍候…</span>':pub?`<button class="btn sm d" onclick="unpub(${i.id})">撤回发布</button>`:`
+        ${speedPick(i)}
+        ${hasText?'':`<button class="btn p sm" onclick="gen(${i.id})" ${i.ai_status==='writing'||!i.student_id?'disabled':''}>✎ AI 生成</button>`}
+        <button class="btn sm ${i.approved?'':'p'}" onclick="approve(${i.id},${i.approved?0:1})" ${hasText?'':'disabled'}>${i.approved?'取消审核':'✓ 审核通过'}</button>
+        ${hasText?`<button class="btn sm" onclick="regen(${i.id},true)" ${i.ai_status==='writing'?'disabled':''}>换一段文字</button>
+        <button class="btn sm" onclick="gen(${i.id})" ${i.ai_status==='writing'?'disabled':''}>重新看图重写</button>`:''}`}
+        ${(!pub&&(itemStuIds(i)||[]).length>1)?`<button class="btn xs" title="一人一条，照片几条共用（不复制文件）。每个孩子可以各挑各的指标、各写各的评价。" onclick="splitItem(${i.id})">⑃ 按孩子拆成 ${(itemStuIds(i)||[]).length} 条</button>`:''}
+        <span class="grow"></span>
+        <button class="btn xs d" ${uncertain||publishing||rewriting?'disabled':''} title="把这一条整个删掉" onclick="delItem(${i.id})">🗑 删掉这条</button>
+        <span class="cnt" id="cnt${i.id}">${(i.text||'').length} 字</span></div></div></div>`;
+}
+function cnt(id,ta){$('#cnt'+id).textContent=ta.value.length+' 字'}
+const itemDrafts=new Map(), itemSaves=new Map(), itemRewrites=new Set();
+function draftItem(id,key,value){
+  if(itemRewrites.has(id)) return;
+  if(key==='table_json'){try{value=JSON.stringify(cleanTableAnalysisNotices(JSON.parse(value)));}catch(e){}}
+  const fields=itemDrafts.get(id)||{}; fields[key]=value; itemDrafts.set(id,fields);
+}
+function saveItemEdits(id){
+  // 同一条的文字和表格串行提交，避免失焦保存晚于审核或重写覆盖新结果。
+  const task=(itemSaves.get(id)||Promise.resolve()).catch(()=>{}).then(async()=>{
+    if(itemRewrites.has(id)) throw new Error('这条记录正在生成，请等待完成后再编辑。');
+    if((S.batch&&S.batch.items||[]).some(x=>x.id===id&&['done','publishing','uncertain'].includes(x.publish_status))) throw new Error('当前记录不能编辑，请先核对发布状态。');
+    const fields={...itemDrafts.get(id)};
+    if(!Object.keys(fields).length) return;
+    const {table_json,...patch}=fields;
+    const tableSaved=table_json===undefined?null:await api('/api/item/'+id+'/table',{method:'POST',json:{table:cleanTableAnalysisNotices(JSON.parse(table_json))}});
+    const saved=Object.keys(patch).length?await api('/api/item/'+id,{method:'PATCH',json:patch}):tableSaved;
+    const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+    if(it&&!['done','publishing','uncertain'].includes(it.publish_status)){
+      Object.assign(it,fields);
+      if(tableSaved){ it.table_json=tableSaved.table_json||table_json; it.text=tableSaved.text; it.approved=tableSaved.approved; }
+      if('text' in fields) it.approved=saved.approved;
+    }
+    const draft=itemDrafts.get(id)||{};
+    Object.keys(fields).forEach(k=>{ if(draft[k]===fields[k]) delete draft[k]; });
+    if(!Object.keys(draft).length) itemDrafts.delete(id);
+  });
+  itemSaves.set(id,task);
+  const clear=(saved)=>{
+    if(itemSaves.get(id)!==task) return;
+    itemSaves.delete(id);
+    if(saved&&S.batch&&!itemDrafts.has(id)) renderBatch(S.batch);
+  };
+  task.then(()=>clear(true),()=>clear(false));
+  return task;
+}
+async function flushItemEdits(ids){
+  // 不依赖 onchange 触发时机：先拿当前输入框，保存完成才生成、审核或发布。
+  for(const id of ids){
+    const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id)||{};
+    for(const [key,cls] of [['teacher_note','teacher-note'],['text','note-text']]){
+      const el=$('#it'+id+' .'+cls);
+      if(el&&!el.disabled&&el.value!==(it[key]||'')) draftItem(id,key,el.value);
+    }
+    if(S.batch.mode==='table') draftTable(id);
+    try{ do{ await saveItemEdits(id); }while(itemDrafts.has(id)); }
+    catch(e){ throw new Error('内容保存失败，请重试：'+e.message); }
+  }
+}
+async function saveText(id,v){ draftItem(id,'text',v); await saveItemEdits(id); }
+async function noteChange(id,v){ draftItem(id,'teacher_note',v); await saveItemEdits(id); }
+async function approve(id,v){ try{ await flushItemEdits([id]); await api('/api/item/'+id,{method:'PATCH',json:{approved:!!v}}); refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function approveAll(){ try{ await flushItemEdits(S.batch.items.filter(i=>!['done','publishing','uncertain'].includes(i.publish_status)).map(i=>i.id)); for(const i of S.batch.items){ if(!i.approved&&i.student_id&&i.text&&!['done','publishing','uncertain'].includes(i.publish_status)) await api('/api/item/'+i.id,{method:'PATCH',json:{approved:true}}); } refreshBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function setStu(id,v){ if(!v) return;
+  try{ document.activeElement&&document.activeElement.blur(); }catch(e){}
+  await api('/api/item/'+id,{method:'PATCH',json:{student_id:+v}});
+  toast('已指定为 '+stName(+v)+'，可以点「AI 生成」了'); S._plan=null; await refreshBatch(S.batch.id); }
+function curPicks(it,sid){ return (sid?stuPicks(it,sid):itemIndicators(it)).map(p=>({indicator_id:p.indicator_id,behavior_lines:pickLines(p),...(p.grade!=null?{grade:p.grade}:{})})); }
+async function putPicks(id,picks,sid){ if(sid) await saveStuPicks(id,sid,picks); else await savePicks(id,picks); }
+async function setIndicatorGrade(id,k,value,sid){
+  if((S.cls&&S.cls.level)===128) return toast('托班固定使用24—36个月档','err');
+  const it=S.batch.items.find(x=>x.id===id),picks=curPicks(it,sid);if(!picks[k])return;
+  const grade=+value;if(value&&!([2,4].includes(grade)))return;
+  if(value){picks[k].grade=grade;picks[k].behavior_lines=[];}
+  else delete picks[k].grade;
+  await putPicks(id,picks,sid);
+  toast(value?GRADE_CN[grade]+'已选，无需勾选具体指标':'已切回具体表现，请勾选原句','ok');
+}
+async function setGrade(id,k,lv,line,g,sid){
+  if([2,4].includes(+g)&&(S.cls&&S.cls.level)!==128)return setIndicatorGrade(id,k,g,sid);
+  const it=S.batch.items.find(x=>x.id===id); const picks=curPicks(it,sid);
+  if(!picks[k]) return;
+  picks[k].behavior_lines=picks[k].behavior_lines.map(x=>(x.level===lv&&x.line===line)?{...x,grade:+g}:x);
+  await putPicks(id,picks,sid);
+  toast('这一条按「'+GRADE_CN[+g]+'」报给幼师口袋','ok');
+}
+async function toggleLine(id,k,lv,line,on,sid){
+  const it=S.batch.items.find(x=>x.id===id); const picks=curPicks(it,sid);
+  if(!picks[k]) return;
+  let ls=picks[k].behavior_lines.slice();
+  if(on){ if(!ls.some(x=>x.level===lv&&x.line===line)) ls.push({level:lv,line,grade:lv}); }
+  else ls=ls.filter(x=>!(x.level===lv&&x.line===line));
+  if(!ls.length) return toast('每条指标至少要勾一句表现行为；不想要就点右边的 ✕ 删掉整条指标','err');
+  picks[k].behavior_lines=ls;
+  await putPicks(id,picks,sid);
+}
+async function savePicks(id,picks){ await api('/api/item/'+id+'/indicators',{method:'POST',json:{picks}}); S._plan=null; refreshBatch(S.batch.id); }
+async function clearInd(id){ await savePicks(id,[]); }
+async function addInd(id,v,line,sid){ if(!v) return; const it=S.batch.items.find(x=>x.id===id);
+  const picks=curPicks(it,sid);
+  const one={indicator_id:+v}; if(line) one.behavior_lines=[{level:(S.cls&&S.cls.level)||5,line,grade:(S.cls&&S.cls.level)||5}];
+  picks.push(one); await putPicks(id,picks,sid); }
+async function delInd(id,k,sid){ const it=S.batch.items.find(x=>x.id===id); const picks=curPicks(it,sid); picks.splice(k,1); await putPicks(id,picks,sid); }
+
+async function addMod(id,v){ if(!v) return; const it=S.batch.items.find(x=>x.id===id); const mods=itemModules(it); const [realm,module]=v.split('|'); if(mods.some(m=>m.realm===realm&&m.module===module)) return; mods.push({realm,module}); await api('/api/item/'+id+'/modules',{method:'POST',json:{modules:mods}}); S._plan=null; refreshBatch(S.batch.id); }
+async function delMod(id,k){ const it=S.batch.items.find(x=>x.id===id); const mods=itemModules(it); mods.splice(k,1); await api('/api/item/'+id+'/modules',{method:'POST',json:{modules:mods}}); S._plan=null; refreshBatch(S.batch.id); }
+async function setSync(id,v){ await api('/api/item/'+id+'/options',{method:'POST',json:{sync_parent:!!v}}); }
+async function setDate(id,v){ if(!v) return; await api('/api/item/'+id+'/options',{method:'POST',json:{record_date:v}}); }
+async function rescan(id){ try{ await api('/api/item/'+id+'/rescan',{method:'POST'}); toast('重新识别中…'); S._plan=null; openBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function rescanAll(){ try{ const r=await api('/api/batch/'+S.batch.id+'/rescan',{method:'POST'}); toast(r.started?('重新识别 '+r.started+' 张…'):'没有需要重认的'); openBatch(S.batch.id); }catch(e){ toast(e.message,'err') } }
+async function clearBatch(){
+  if(!confirm(`将本批次 ${S.batch.items.length} 条记录移入本机回收站？\n已发布到幼师口袋的记录不受影响，可在「历史批次 → 回收站」恢复。`)) return;
+  try{ await flushItemEdits(S.batch.items.map(i=>i.id)); const r=await api('/api/batch/'+S.batch.id,{method:'DELETE'});
+    clearInterval(S.poll); S.batch=null; $('#batchView').innerHTML='';
+    toast(`已将 ${r.deleted} 条记录移入回收站，网站记录不受影响`,'ok');
+    if(typeof loadHistory==='function') loadHistory();
+  }catch(e){ toast(e.message,'err') }
+}
+/* 每条记录自己的「快 / 细」。这条选细、下一条选快，互不影响，也不用离开这个页面。 */
+function curSpeed(i){ return S.speed[i.id] || i.ai_speed || S.speedDefault || 'fast'; }
+
+function speedPick(i){ return ObservationAI.picker(i); }
+
+function setSpeed(id, k){
+  S.speed[id]=k;
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id);
+  if(it && !(it.text||'').trim()){ renderBatch(S.batch); return; }   // 还没写，静静记下就好
+  renderBatch(S.batch);
+  toast(k==='fast'?'这条改成「快」了，点「换「快」重写」就重写':'这条改成「细」了，点「换「细」重写」就重写');
+}
+
+async function gen(id){
+  const it=(S.batch&&S.batch.items||[]).find(x=>x.id===id)||{id};
+  const sp=curSpeed(it);
+  try{
+    await flushItemEdits([id]);
+    await api('/api/item/'+id+'/generate?effort='+encodeURIComponent(ObservationAI.effort(it)),{method:'POST'});
+    S.speedDefault=sp;
+    toast('AI 已开始生成，可查看真实进度。');
+    openBatch(S.batch.id);
+  }catch(e){ toast(e.message,'err') }
+}
+async function genAll(){
+  try{ await flushItemEdits(S.batch.items.filter(i=>!['done','publishing','uncertain'].includes(i.publish_status)).map(i=>i.id));
+    const n=S.batch.items.filter(i=>i.student_id&&!(i.text&&i.text.trim())&&!['done','publishing','uncertain'].includes(i.publish_status)).length;
+    if(!n) return toast('没有需要生成的（认出孩子且还没有文字的才会生成）');
+    if(!confirm(`给这 ${n} 条还没写的记录用 AI 生成文字？`)) return;
+    const r=await api('/api/batch/'+S.batch.id+'/generate?only_missing=true&effort='+encodeURIComponent((ObservationAI.info&&ObservationAI.info.selected)||''),{method:'POST'}); toast(`已开始生成 ${r.started} 条`); openBatch(S.batch.id);
+  }catch(e){ toast(e.message,'err') }
+}
+async function regen(id,textOnly){ const it=S.batch.items.find(x=>x.id===id);
+  const sp=curSpeed(it); S.speedDefault=sp;
+  try{ await flushItemEdits([id]);
+    await api('/api/item/'+id+'/regenerate',{method:'POST',json:{text_only:!!textOnly,effort:ObservationAI.effort(it),indicator_id:textOnly?null:(it.indicator_id||null)}});
+    toast('已开始重写，可查看真实进度。'); openBatch(S.batch.id);
+  }catch(e){ toast(e.message,'err') } }
+async function publishBatch(){
+  if(S._publishing) return;
+  S._publishing=true;
+  try{
+  await flushItemEdits(S.batch.items.filter(i=>!['done','publishing','uncertain'].includes(i.publish_status)).map(i=>i.id));
+  const ids=S.batch.items.filter(i=>i.approved&&!['done','publishing','uncertain'].includes(i.publish_status)&&i.student_id&&i.text).map(i=>i.id);
+  if(!ids.length) return toast('没有可发布的已审核记录；修改内容后请重新审核。','err');
+  const noSync=S.batch.items.filter(i=>ids.includes(i.id)&&!(i.sync_parent===null||i.sync_parent===undefined?1:i.sync_parent)).length;
+  const what=isTable()
+    ? `这 ${ids.length} 条将以【观察记录表】发布观察实录及保留的栏目。观察分析和回应策略家长不可见；家庭指导和旧版自定义段落在同步给家长时可见。`
+    : `确定把这 ${ids.length} 条发布到幼师口袋吗？`;
+  if(!confirm(`${what}${noSync?`其中 ${noSync} 条不同步给家长。`:'家长端可见（不想给家长看，就用上面「同步家长 关」）。'}发布后可撤回。`)) return;
+  $('#btnPub').disabled=true; $('#pubBar').style.display='block';
+    const r=await api('/api/batch/'+S.batch.id+'/publish',{method:'POST',json:{item_ids:ids}}); await waitJob(r.job,(j)=>{const p=$('#pubBar'); if(!p) return; p.querySelector('i').style.width=(j.total?Math.round(100*j.done/j.total):0)+'%'; p.querySelector('.hint').textContent=`已发布 ${j.done}/${j.total}`;});
+    const j=await api('/api/job/publish_'+S.batch.id); toast(`发布完成：成功 ${j.result.ok} 条${j.result.fail?'，失败 '+j.result.fail+' 条':''}`, j.result.fail?'err':'ok'); }
+  catch(e){toast(e.message,'err')} finally{ S._publishing=false; refreshBatch(S.batch.id) }
+}
+async function unpub(id){ if(!confirm('撤回这条已发布的记录？')) return; try{ await api('/api/item/'+id+'/unpublish',{method:'POST'}); toast('已撤回','ok'); }catch(e){toast(e.message,'err')} refreshBatch(S.batch.id); }
+function waitJob(name,onTick){ return new Promise((res,rej)=>{ const t=setInterval(async()=>{ const j=await api('/api/job/'+name); onTick&&onTick(j); if(j.status==='done'){clearInterval(t);res(j)} if(j.status==='error'){clearInterval(t);rej(new Error(j.error))} },800) }); }
+
+/* ---------------- 花名册 ---------------- */
+async function loadRoster(){
+  if(!S.cls) return;
+  S.students=await api('/api/class/'+S.cls.class_id+'/students');
+  resetOptCache();
+  // 「已入库」两个来源：本地自己传的，和云端同班老师传的。点按两边取大来亮。
+  const cloudOf=s=>Math.max(0, s.cloud_faces||0);
+  const liveOf=s=>Math.max(s.enrolled_count||0, cloudOf(s));
+  const why=s=>{
+    const mine=s.enrolled_count||0, cloud=cloudOf(s);
+    if(mine) return `${mine} 张已入库${s.photo_count>mine?` · ${s.photo_count-mine} 张待入库`:''}`;
+    if(cloud) return `云端已有 ${cloud} 张 · 同班老师传的`;
+    return s.photo_count?`${s.photo_count} 张待入库`:'还没有照片';
+  };
+  const g=$('#stuGrid'); g.innerHTML=S.students.map(s=>`<div class="stu" onclick="openStu(${s.student_id})"><span class="dot ${liveOf(s)?'ok':(s.photo_count?'part':'')}"></span><div class="av">${s.photo_count?`<img src="/api/student/${s.student_id}/cover?${Date.now()}" onerror="this.parentNode.textContent='☺'">`:(cloudOf(s)?'☁':'☺')}</div><b>${esc(s.name)}</b><small>${why(s)}</small></div>`).join('');
+  const ok=S.students.filter(s=>liveOf(s)).length, pend=S.students.reduce((a,s)=>a+(s.photo_count-s.enrolled_count),0);
+  const fromCloud=S.students.filter(s=>!s.enrolled_count&&cloudOf(s)).length;
+  $('#rosterStat').textContent=`${ok}/${S.students.length} 个孩子已入库${fromCloud?`（其中 ${fromCloud} 个是同班老师传的，你不用再导）`:''}${pend?'，'+pend+' 张照片待入库':''}`;
+  $('#btnEnroll').disabled=!pend; $('#btnEnroll').textContent=pend?`↑ 把 ${pend} 张新照片入库`:'↑ 没有待入库照片';
+  loadPending();
+}
+async function openStu(id){
+  const s=S.students.find(x=>x.student_id===id); const ph=await api('/api/student/'+id+'/photos');
+  modal(`<div class="row"><h2 style="margin:0">${esc(s.name)}</h2><span class="pill">${ph.filter(p=>p.enrolled).length} 张已入库</span><span class="grow"></span><button class="btn sm" onclick="closeModal()">关闭</button></div>
+    <p class="hint">建议 2～3 张不同角度、不同日期的正脸照，脸要清楚、不要戴口罩。最多保留最近 5 张。</p>
+    <div class="drop" id="dropStu" style="padding:20px"><b>拖入照片，或点击选择</b></div><input type="file" id="fileStu" multiple accept="image/*" hidden>
+    <div class="thumbs" style="margin-top:12px">${ph.map(p=>`<div class="th ${p.error?'err':''}"><img src="/api/photo/${p.id}"><div class="x" onclick="delPhoto(${p.id},${id})">✕</div><div class="st">${p.enrolled?'已入库':(p.error?esc(p.error):'待入库')}</div></div>`).join('')||'<span class="hint">还没有照片</span>'}</div>`);
+  const d=$('#dropStu'),f=$('#fileStu'); d.onclick=()=>f.click(); f.onchange=()=>upStu(id,[...f.files]);
+  ['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over')}));
+  ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over')}));
+  d.addEventListener('drop',e=>upStu(id,[...e.dataTransfer.files]));
+}
+async function upStu(id,files){ const fd=new FormData(); files.forEach(f=>fd.append('files',f,f.name)); const r=await api('/api/student/'+id+'/photos',{method:'POST',form:fd}); if(r.errors.length) toast(r.errors.join('；'),'err'); else toast('已添加 '+r.added.length+' 张','ok'); await loadRoster(); openStu(id); }
+async function delPhoto(pid,sid){ await api('/api/photo/'+pid,{method:'DELETE'}); await loadRoster(); openStu(sid); }
+$('#btnSync').onclick=async()=>{ if(!S.cls) return pickClass(); toast('同步中…'); try{ await api('/api/class/'+S.cls.class_id+'/sync',{method:'POST'}); toast('名单已更新','ok'); loadRoster(); }catch(e){toast(e.message,'err')} };
+$('#btnHarvest').onclick=()=>{
+  modal(`<h2>从历史记录自动找底照</h2>
+  <p>你们班过去发过的每一条观察记录，当年老师都标好了"这是谁"。程序会把这些记录翻一遍，
+  挑出<b>只标注了一个孩子</b>的那些，把照片下载下来当底照——照片和姓名的对应关系是老师自己标的，可靠。</p>
+  <p>每个孩子会逐张验证候选照片：用腾讯云读出这张脸的<b>左右偏头、抬低头、歪头角度和清晰度</b>，
+  <b>不是正脸就换下一张</b>，一直翻到找够为止（每人最多验 24 张）。同框有别人的、侧脸的、太糊太小的一律不要。</p>
+  <p class="hint">实在一张完整正脸都找不到的孩子，会先用"勉强能用"的顶上，并在结果里点名，你手工换一张即可。</p>
+  <label class="row" style="gap:6px;margin-top:10px;cursor:pointer"><input type="checkbox" id="hvReset" checked> <span>把现有的自动底照也重挑一遍（先清空，老师手工传的保留）</span></label>
+  <p class="hint">已经有照片的孩子会跳过。翻页和检测都要点时间，一个班大约 1～3 分钟。</p>
+  <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn p" id="btnHarvestGo">开始</button></div>
+  <div id="harvestProg" style="margin-top:14px;display:none"><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:6px"></div></div>`);
+  $('#btnHarvestGo').onclick=async()=>{
+    const box=$('#harvestProg'); box.style.display='block'; $('#btnHarvestGo').disabled=true;
+    try{
+      const r=await api('/api/class/'+S.cls.class_id+'/harvest?want=3&reset='+($('#hvReset')&&$('#hvReset').checked?'true':'false'),{method:'POST'});
+      const j=await waitJob(r.job,j=>{ box.querySelector('i').style.width=(j.total?Math.round(100*j.done/j.total):0)+'%'; box.querySelector('.hint').textContent='正在翻记录、下载、检测…'; });
+      const x=j.result;
+      modal(`<h2>找完了</h2>
+        <p>翻了 ${x.pages} 页记录，其中单人记录 ${x.records} 条，候选照片 ${x.candidates} 张。</p>
+        <p><b>成功入档 ${x.saved} 张</b>（其中 <b>${x.front_count||0} 张是完整正脸</b>），覆盖 ${Object.keys(x.per_child).length} 个孩子。</p>
+        ${(x.no_front&&x.no_front.length)?`<div style="padding:10px 14px;border-radius:10px;background:var(--y2);color:#8a5d00;margin:8px 0">这 ${x.no_front.length} 个孩子<b>没找到完整正脸</b>，暂时用了勉强能用的，建议手工换一张：<br>${x.no_front.map(esc).join('、')}</div>`:''}
+        <p class="hint">跳过：同框多张脸 ${x.skipped_multiface} 张，没拍到脸 ${x.skipped_noface} 张，侧脸/太糊/太小 ${x.skipped_sideface||0} 张${x.failed?'，失败 '+x.failed+' 张':''}。</p>
+        ${x.still_missing.length?`<div class="warn" style="padding:10px 14px;border-radius:10px;background:var(--y2);color:#8a5d00">还有 ${x.still_missing.length} 个孩子没找到底照，需要手动补：${x.still_missing.map(esc).join('、')}</div>`:'<p class="pill g" style="display:block;padding:8px 12px">全班都找到了！</p>'}
+        ${x.errors&&x.errors.length?`<p class="hint" style="margin-top:10px">${x.errors.map(esc).join('<br>')}</p>`:''}
+        <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" onclick="closeModal();loadRoster()">关闭</button>${((x.no_front&&x.no_front.length)||x.still_missing.length)?'<button class="btn w" onclick="closeModal();runGroupHarvest()">去合影里再找一轮</button>':''}<button class="btn p" onclick="closeModal();openReview()">先复核一遍</button></div>`);
+    }catch(e){ box.querySelector('.hint').textContent='失败：'+e.message; toast(e.message,'err'); $('#btnHarvestGo').disabled=false; }
+  };
+};
+$('#btnReview').onclick=openReview;
+async function openReview(){
+  const ph=await api('/api/class/'+S.cls.class_id+'/photos');
+  if(!ph.length) return modal('<h2>复核底照</h2><p>还没有任何底照。</p><div class="row" style="justify-content:flex-end"><button class="btn p" onclick="closeModal()">好的</button></div>');
+  const opts=S.students.map(s=>`<option value="${s.student_id}">${s.name}</option>`).join('');
+  const byName={}; ph.forEach(p=>{ (byName[p.name]=byName[p.name]||[]).push(p); });
+  modal(`<div class="row"><h2 style="margin:0">复核底照</h2><span class="pill">${ph.length} 张 · ${Object.keys(byName).length} 个孩子</span><span class="grow"></span><button class="btn sm w" onclick="regrade()">重新判定正脸</button><button class="btn sm" onclick="closeModal()">关闭</button></div>
+    <p class="hint">角标 <b>✓ 正脸</b> = 完整正脸；<b>⚠ 不够正</b> = 没找到正脸时的临时顶替，建议换掉。<b>请扫一眼有没有认错人</b>——认错了就在下拉框里改成正确的孩子，改完那张会自动退回"待入库"，再点一次「把新照片入库」就行。不合适的直接删。</p>
+    <div style="max-height:60vh;overflow:auto;margin-top:10px">
+    ${Object.entries(byName).map(([name,list])=>`
+      <div style="margin-bottom:14px">
+        <div style="font-weight:600;margin-bottom:6px">${esc(name)} <span class="pill ${list.some(p=>p.enrolled)?'g':'y'}">${list.filter(p=>p.enrolled).length}/${list.length} 已入库</span></div>
+        <div class="thumbs">${list.map(p=>`
+          <div style="width:132px">
+            <div class="th ${p.error?'err':''}" title="${p.quality?('正脸分 '+p.quality):''}" style="width:132px;height:132px"><img src="/api/photo/${p.id}" loading="lazy"><div class="x" onclick="reviewDel(${p.id})">✕</div>${p.error?`<div class="st">${esc(p.error).slice(0,22)}</div>`:`<div class="st">${p.grade==='front'?'✓ 正脸':(p.grade==='ok'?'⚠ 不够正':(p.grade==='bad'?'✗ 不能用':'手工'))}${p.enrolled?' · 已入库':' · 待入库'}</div>`}</div>
+            <select class="inp" style="padding:5px 8px;font-size:12px;margin-top:5px" onchange="reviewMove(${p.id},this.value)">
+              <option value="">${esc(name)}（不改）</option>${opts}</select>
+          </div>`).join('')}</div>
+      </div>`).join('')}
+    </div>`);
+}
+async function regrade(){
+  toast('正在逐张重新判定…');
+  try{
+    const r=await api('/api/class/'+S.cls.class_id+'/regrade',{method:'POST'});
+    const j=await waitJob(r.job,()=>{});
+    const x=j.result;
+    toast(`判定完成：正脸 ${x.front} 张，不够正 ${x.ok} 张，不能用 ${x.bad} 张`,'ok');
+    await loadRoster(); openReview();
+  }catch(e){ toast(e.message,'err') }
+}
+async function reviewDel(id){ await api('/api/photo/'+id,{method:'DELETE'}); toast('已删除'); await loadRoster(); openReview(); }
+async function reviewMove(id,sid){ if(!sid) return; try{ await api('/api/photo/'+id+'/reassign',{method:'POST',json:{student_id:+sid}}); toast('已改派给 '+stName(+sid)+'，记得重新入库','ok'); await loadRoster(); openReview(); }catch(e){ toast(e.message,'err') } }
+
+$('#btnGroup').onclick=()=>{
+  modal(`<h2>从合影里找底照</h2>
+  <p>有些孩子从来没被单独发过——照片全在合影里。合影本身不知道哪张脸是谁，所以程序用<b>排除法</b>：
+  把合影里每张脸单独抠出来，拿已经建好的人脸库搜一遍。<b>认出来是别的孩子的，直接排除；认出来就是他本人的，直接入库；
+  剩下认不出的那几张，交给你点一下确认。</b></p>
+  <p class="hint">只处理"目前一张正脸都没有"的孩子。抠脸和搜脸都要调用云端，一个班大约 1～3 分钟。</p>
+  <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn p" onclick="runGroupHarvest()">开始</button></div>`);
+};
+async function runGroupHarvest(){
+  modal(`<h2>正在从合影里找…</h2><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:8px">翻记录 → 抠脸 → 搜脸比对，请稍候</div>`);
+  try{
+    const r=await api('/api/class/'+S.cls.class_id+'/harvest_group',{method:'POST'});
+    const j=await waitJob(r.job,j=>{ const i=document.querySelector('.modal .bar i'); if(i) i.style.width=(j.total?Math.round(100*j.done/j.total):0)+'%'; });
+    const x=j.result;
+    modal(`<h2>合影里找完了</h2>
+      <p>这轮针对 <b>${(x.targets||[]).length}</b> 个还没正脸的孩子：${(x.targets||[]).map(esc).join('、')||'（没有需要处理的）'}</p>
+      <p><b>直接认出来并入库 ${x.auto} 张</b>；<b>还有 ${x.candidates} 张需要你确认是不是本人</b>。</p>
+      <p class="hint">排除掉同框的别的孩子 ${x.skipped_matched_other} 张，侧脸/太糊 ${x.skipped_bad} 张。</p>
+      ${x.errors&&x.errors.length?`<p class="hint">${x.errors.map(esc).join('<br>')}</p>`:''}
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" onclick="closeModal();loadRoster()">关闭</button>${x.candidates?'<button class="btn p" onclick="closeModal();openCandidates()">去指认</button>':''}</div>`);
+  }catch(e){ toast(e.message,'err'); closeModal(); }
+}
+async function openCandidates(){
+  const cs=await api('/api/class/'+S.cls.class_id+'/candidates');
+  if(!cs.length) return modal('<h2>待指认</h2><p>没有需要指认的照片。</p><div class="row" style="justify-content:flex-end"><button class="btn p" onclick="closeModal()">好的</button></div>');
+  const byName={}; cs.forEach(c=>{ (byName[c.name]=byName[c.name]||[]).push(c); });
+  modal(`<div class="row"><h2 style="margin:0">请指认</h2><span class="pill y">${cs.length} 张待确认</span><span class="grow"></span><button class="btn sm" onclick="closeModal()">关闭</button></div>
+    <p class="hint">这些脸是从<b>合影</b>里抠出来的。合影里标注了这个孩子，但程序不敢替你认哪张脸是他。<b>是他本人就点「就是他」，不是就点「不是」。</b>确认后才会进人脸库。</p>
+    <div style="max-height:60vh;overflow:auto;margin-top:10px">
+    ${Object.entries(byName).map(([name,list])=>`
+      <div style="margin-bottom:14px">
+        <div style="font-weight:600;margin-bottom:6px">${esc(name)}</div>
+        <div class="thumbs">${list.map(c=>`
+          <div style="width:132px">
+            <div class="th" style="width:132px;height:132px"><img src="/api/candidate/${c.id}" loading="lazy"><div class="st">${c.grade==='front'?'✓ 正脸':'⚠ 不够正'}</div></div>
+            <div class="row" style="gap:4px;margin-top:5px">
+              <button class="btn sm p" style="flex:1" onclick="candOk(${c.id})">就是他</button>
+              <button class="btn sm" style="flex:1" onclick="candNo(${c.id})">不是</button></div>
+          </div>`).join('')}</div>
+      </div>`).join('')}
+    </div>`);
+}
+async function candOk(id){ try{ await api('/api/candidate/'+id+'/confirm',{method:'POST'}); toast('已收进底照，记得点「把新照片入库」','ok'); await loadRoster(); openCandidates(); }catch(e){ toast(e.message,'err') } }
+async function candNo(id){ await api('/api/candidate/'+id,{method:'DELETE'}); await loadRoster(); openCandidates(); }
+$('#btnNick').onclick=()=>{
+  modal(`<h2>小名</h2>
+  <p>老师写记录时有时使用小名或昵称。程序会先翻一遍幼师口袋里这个班的历史记录，
+  看看老师过去有没有提过小名；<b>翻不到的，会按最常见的叫法（名字最后一个字叠用）给你一个建议</b>，你改一下就行。</p>
+  <p class="hint">小名只存在你这台电脑上，写评价时用；留空就用大名。</p>
+  <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <button class="btn" onclick="closeModal();openNickList()">跳过，直接填</button>
+    <button class="btn p" id="btnNickGo">从历史记录里找一遍</button></div>
+  <div id="nickProg" style="margin-top:14px;display:none"><div class="bar"><i style="width:0"></i></div><div class="hint" style="margin-top:6px">正在翻记录…</div></div>`);
+  $('#btnNickGo').onclick=async()=>{
+    $('#nickProg').style.display='block'; $('#btnNickGo').disabled=true;
+    try{
+      const r=await api('/api/class/'+S.cls.class_id+'/nicknames',{method:'POST'});
+      const j=await waitJob(r.job,jj=>{ const i=document.querySelector('#nickProg i'); if(i) i.style.width=(jj.total?Math.round(100*jj.done/jj.total):0)+'%'; });
+      const x=j.result||{}; const got=Object.entries(x.found||{});
+      await loadRoster(); closeModal();
+      openNickList(got.length?`翻了 ${x.pages} 页记录，从老师写过的文字里认出 ${got.length} 个小名，已经填好了。`
+                             :`翻了 ${x.pages} 页记录 —— 这个班的记录里老师全程用「你」称呼孩子，一次名字都没出现，所以没挖到。下面按最常见的叫法给了建议，你改一下或直接采用。`);
+    }catch(e){ toast(e.message,'err'); $('#btnNickGo').disabled=false; }
+  };
+};
+async function openNickList(tip){
+  const list=await api('/api/class/'+S.cls.class_id+'/nicknames');
+  S.nickList=list;
+  modal(`<div class="row"><h2 style="margin:0">小名</h2><span class="grow"></span>
+    <button class="btn w sm" onclick="fillSuggest()">把空的按建议填上</button>
+    <button class="btn p sm" onclick="saveNickAll()">保存</button>
+    <button class="btn sm" onclick="closeModal()">关闭</button></div>
+  ${tip?`<p class="hint">${esc(tip)}</p>`:'<p class="hint">留空就用大名。</p>'}
+  <div style="max-height:58vh;overflow:auto;margin-top:8px">
+    ${list.map((s,k)=>`<div class="row" style="gap:10px;padding:5px 0;align-items:center">
+      <span style="width:96px">${esc(s.name)}</span>
+      <input class="inp nk" data-k="${k}" style="max-width:200px" value="${esc(s.nickname||'')}" placeholder="建议：${esc(s.suggest||'')}">
+      ${s.suggest?`<button class="btn xs" onclick="useSuggest(${k})">用「${esc(s.suggest)}」</button>`:''}
+    </div>`).join('')}
+  </div>`);
+}
+function useSuggest(k){ const el=document.querySelector('.nk[data-k="'+k+'"]'); if(el) el.value=S.nickList[k].suggest||''; }
+function fillSuggest(){ document.querySelectorAll('.nk').forEach(el=>{ if(!el.value.trim()) el.value=S.nickList[+el.dataset.k].suggest||''; }); }
+async function saveNickAll(){
+  const items=[...document.querySelectorAll('.nk')].map(el=>({student_id:S.nickList[+el.dataset.k].student_id, nickname:el.value.trim()}));
+  try{ const r=await api('/api/class/'+S.cls.class_id+'/nicknames/bulk',{method:'POST',json:{items}});
+       toast('已保存 '+r.saved+' 个','ok'); await loadRoster(); closeModal(); }
+  catch(e){ toast(e.message,'err') }
+}
+async function saveNick(sid,v){ try{ await api('/api/student/'+sid+'/nickname',{method:'POST',json:{nickname:v}}); await loadRoster(); }catch(e){ toast(e.message,'err') } }
+function bindStyle(){
+  const b1=$('#btnStyleLearn'), b2=$('#btnStyleToggle'), b3=$('#btnStyleView');
+  if(!b1) return;
+  b1.onclick=async()=>{
+    if(!S.cls) return toast('请先选择班级','err');
+    const nf=(S.styleFiles||[]).length;
+    if(!confirm(`程序会翻一遍这个班过去的观察记录${nf?`，再加上你传的 ${nf} 份范文`:''}，交给 AI 总结你的口吻。\n大约 1~2 分钟，期间不要关程序。`)) return;
+    $('#styleProg').style.display='block'; b1.disabled=true;
+    try{
+      const r=await api('/api/class/'+S.cls.class_id+'/style/learn',{method:'POST'});
+      const j=await waitJob(r.job,jj=>{const i=document.querySelector('#styleProg i'); if(i) i.style.width=(jj.total?Math.round(100*jj.done/jj.total):0)+'%';});
+      S.style=j.result; await loadStyle(); toast('学好了，已经启用','ok'); showStyle();
+    }catch(e){ toast(e.message,'err'); }
+    finally{ b1.disabled=false; $('#styleProg').style.display='none'; }
+  };
+  b2.onclick=async()=>{
+    if(!(S.style&&S.style.card)) return toast('还没学过风格','err');
+    S.style=await api('/api/style',{method:'POST',json:{on:!S.style.on}});
+    await loadStyle(); toast(S.style.on?'已启用，之后写评价会照你的口吻':'已停用，恢复通用写法','ok');
+  };
+  b3.onclick=()=>showStyle();
+  const up=$('#btnStyleUp'), fs=$('#fileStyle'), clr=$('#btnStyleClr');
+  if(up&&fs){
+    up.onclick=()=>{ fs.value=''; fs.click(); };
+    fs.onchange=async()=>{
+      const files=[...fs.files]; if(!files.length) return;
+      const fd=new FormData(); files.forEach(f=>fd.append('files',f,f.name));
+      up.disabled=true; up.textContent='正在读…';
+      try{
+        const r=await api('/api/style/samples',{method:'POST',form:fd});
+        const n=(r.added||[]).reduce((a,x)=>a+x.n,0);
+        if(r.errors&&r.errors.length) toast(r.errors.join('；'),'err');
+        if(n) toast(`收到 ${n} 段范文，点「学习我的写作风格」就会一起学`,'ok');
+        await loadStyleFiles();
+      }catch(e){ toast(e.message,'err') }
+      finally{ up.disabled=false; up.textContent='＋ 上传范文'; }
+    };
+  }
+  if(clr) clr.onclick=async()=>{ if(!confirm('把传上来的范文全部清掉？（已经学好的风格卡不受影响）')) return;
+    await api('/api/style/samples',{method:'DELETE'}); await loadStyleFiles(); toast('已清空','ok'); };
+}
+async function loadStyleFiles(){
+  const box=$('#styleFiles'); if(!box) return;
+  let list=[]; try{ list=await api('/api/style/samples'); }catch(e){}
+  S.styleFiles=list;
+  box.innerHTML = list.length
+    ? list.map(x=>`<span class="pill b" style="margin-right:6px">${esc(x.name)} · ${x.n} 段
+        <a href="#" style="text-decoration:none;color:#b3261e" onclick="dropStyleFile('${esc(x.name).replace(/'/g,"\\'")}');return false">✕</a></span>`).join('')
+    : '还没有传过文件。';
+}
+async function dropStyleFile(name){ await api('/api/style/samples?name='+encodeURIComponent(name),{method:'DELETE'}); await loadStyleFiles(); }
+function showStyle(){
+  const p=S.style||{};
+  if(!p.card) return modal('<h2>我的写作风格</h2><p>还没有学习过。</p><div class="row" style="justify-content:flex-end"><button class="btn p" onclick="closeModal()">好的</button></div>');
+  const c=p.card, rows=['一句话概括','称呼','开头','结尾','句式','用词','标点','篇幅'];
+  modal(`<div class="row"><h2 style="margin:0">我的写作风格</h2><span class="pill ${p.on?'g':'y'}">${p.on?'已启用':'已停用'}</span><span class="grow"></span><button class="btn sm" onclick="closeModal()">关闭</button></div>
+  <p class="hint">这是 AI 从你写过的 ${p.mine||p.samples||0} 条记录里总结的${p.skipped_others?`（同班另一位老师的 ${p.skipped_others} 条没看）`:''}。写评价时会当成"这位老师的习惯"喂给模型，比通用规则优先。</p>
+  <div style="max-height:56vh;overflow:auto;margin-top:8px">
+    ${rows.filter(k=>c[k]).map(k=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b style="display:inline-block;width:88px">${k}</b>${esc(String(c[k]))}</div>`).join('')}
+    ${(c['避免']&&c['避免'].length)?`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b style="display:inline-block;width:88px">不要出现</b>${c['避免'].map(esc).join('、')}</div>`:''}
+    ${(c['范例']&&c['范例'].length)?`<div style="padding:8px 0"><b>你写过的样子</b>${c['范例'].map(e=>`<div class="hint" style="margin-top:6px">${esc(String(e))}</div>`).join('')}</div>`:''}
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:10px">
+    <button class="btn" onclick="$('#btnStyleToggle').click();closeModal()">${p.on?'停用':'启用'}</button>
+    <button class="btn p" onclick="closeModal()">好的</button></div>`);
+}
+bindStyle();
+$('#btnCloudRefresh').onclick=async()=>{
+  const b=$('#btnCloudRefresh'), t=b.textContent; b.disabled=true; b.textContent='查询中…';
+  try{
+    const r=await api('/api/class/'+S.cls.class_id+'/cloud_refresh',{method:'POST'});
+    await loadRoster();
+    toast(r.in_cloud?`云端这个班已有 ${r.in_cloud} 个孩子、共 ${r.faces} 张脸`:'云端这个班还没有人入过库','ok');
+  }catch(e){ toast(e.message,'err') }
+  finally{ b.disabled=false; b.textContent=t }
+};
+$('#btnEnroll').onclick=async()=>{
+  const bar=$('#enrollBar'); bar.style.display='block'; $('#btnEnroll').disabled=true;
+  try{ const r=await api('/api/class/'+S.cls.class_id+'/enroll',{method:'POST'}); const j=await waitJob(r.job,j=>{bar.querySelector('i').style.width=(j.total?Math.round(100*j.done/j.total):0)+'%'; bar.querySelector('.hint').textContent=`入库中 ${j.done}/${j.total}`});
+    const res=j.result; bar.querySelector('.hint').textContent=`完成：成功 ${res.ok} 张${res.fail?'，失败 '+res.fail+' 张（点开孩子可看原因）':''}`; toast(res.fail?'有照片入库失败，请查看':'入库完成','ok'); }
+  catch(e){ bar.querySelector('.hint').textContent='失败：'+e.message; toast(e.message,'err') }
+  loadRoster();
+};
+$('#btnImpExcel').onclick=()=>{
+  modal(`<h2>用 Excel 导入照片</h2>
+  <p>Excel 需要两列：<b>姓名</b> 和 <b>照片</b>。照片列可以是：</p>
+  <ul style="margin:6px 0 12px 20px;line-height:1.9"><li>照片文件的完整路径，如 <kbd>D:\\照片\\示例姓名1.jpg</kbd>；多张用分号隔开</li><li>一个文件夹路径（里面全是这个孩子的照片）</li><li>直接把图片<b>插入到单元格</b>里（WPS/Excel 的"插入图片—嵌入单元格"）</li></ul>
+  <p class="hint">同一个孩子可以写多行。姓名必须和花名册一致。新建 Excel，第一行分别填写「姓名」「照片」作为表头即可。</p>
+  <div class="row" style="justify-content:flex-end"><input type="file" id="fileXlsx" accept=".xlsx,.xlsm" hidden><button class="btn p" id="btnXlsxGo">选择 Excel 文件</button></div>`);
+  $('#btnXlsxGo').onclick=async()=>{
+    if(hasNative()){ const p=await native('pick_files','excel'); if(!p||!p.length) return; return impExcelResult(await api('/api/class/'+S.cls.class_id+'/import/excel',{method:'POST',json:{paths:p}})); }
+    $('#fileXlsx').click(); };
+  $('#fileXlsx').onchange=async()=>{ const fd=new FormData(); fd.append('file',$('#fileXlsx').files[0]); impExcelResult(await api('/api/class/'+S.cls.class_id+'/import/excel_upload',{method:'POST',form:fd})); };
+};
+function impExcelResult(r){ modal(`<h2>导入结果</h2><p>成功匹配 ${r.matched.length} 个孩子：${r.matched.map(m=>esc(m.name)+'×'+m.count).join('、')||'无'}</p>${r.unknown.length?`<p class="pill r" style="display:block;padding:8px 12px">花名册里没有这些名字：${r.unknown.map(esc).join('、')}</p>`:''}${r.errors.length?`<p class="hint">${r.errors.map(esc).join('<br>')}</p>`:''}<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn p" onclick="closeModal();loadRoster()">好的</button></div>`); }
+$('#btnImpFiles').onclick=()=>{
+  modal(`<h2>整包照片自动归档</h2>
+  <p>把一堆照片（或一个文件夹）交给程序，它会按这个顺序认人：</p>
+  <ol style="margin:6px 0 12px 20px;line-height:1.9"><li>照片所在的<b>子文件夹名</b>就是孩子姓名 → 直接归档</li><li>文件名以姓名开头（如 <kbd>示例姓名1.jpg</kbd>）→ 直接归档</li><li>都不是，但人脸库里已有这个班 → 用人脸自动认</li><li>还认不出的 → 列在"待指认"里，你点一下是谁</li></ol>
+  <div class="drop" id="dropImp" style="padding:20px"><b>拖入照片或整个文件夹</b>也可以点击选择</div><input type="file" id="fileImp" multiple accept="image/*" hidden>
+  <div class="row" style="justify-content:flex-end;margin-top:10px">${hasNative()?'<button class="btn" id="btnImpFolder">选择文件夹…</button>':''}</div><div id="impProg" class="hint"></div>`);
+  const d=$('#dropImp'),f=$('#fileImp'); d.onclick=()=>f.click(); f.onchange=()=>impUpload([...f.files]);
+  ['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over')}));
+  ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over')}));
+  d.addEventListener('drop',async e=>{ const items=[...e.dataTransfer.items||[]]; const files=[];
+    const walk=(entry,path)=>new Promise(res=>{ if(entry.isFile){entry.file(fl=>{files.push(new File([fl],path+fl.name,{type:fl.type}));res()})} else if(entry.isDirectory){const r=entry.createReader(); r.readEntries(async es=>{for(const en of es) await walk(en,path+entry.name+'/'); res()})} else res() });
+    for(const it of items){ const en=it.webkitGetAsEntry&&it.webkitGetAsEntry(); if(en) await walk(en,''); }
+    impUpload(files.length?files:[...e.dataTransfer.files]); });
+  const bf=$('#btnImpFolder'); if(bf) bf.onclick=async()=>{ const p=await native('pick_folder'); if(!p||!p.length) return; const r=await api('/api/class/'+S.cls.class_id+'/import/files',{method:'POST',json:{paths:p}}); impWait(r.job); };
+};
+async function impUpload(files){ files=files.filter(f=>/image/.test(f.type)||/\.(jpe?g|png|bmp|webp)$/i.test(f.name)); if(!files.length) return toast('没有图片','err'); const fd=new FormData(); files.forEach(f=>fd.append('files',f,f.webkitRelativePath||f.name)); $('#impProg').textContent=`上传 ${files.length} 张，正在归档…`; const r=await api('/api/class/'+S.cls.class_id+'/import/upload',{method:'POST',form:fd}); impWait(r.job); }
+async function impWait(job){ try{ const j=await waitJob(job); const r=j.result; modal(`<h2>归档结果</h2><p>自动归档 ${r.auto.length} 张（按名字 ${r.auto.filter(a=>a.how==='name').length} 张，按人脸 ${r.auto.filter(a=>a.how==='face').length} 张）</p><p>${r.pending.length?`<b>${r.pending.length} 张没认出来</b>，已放进"待指认"，请在花名册页面上方处理。`:'全部认出来了！'}</p>${r.errors.length?`<p class="hint">${r.errors.map(esc).join('<br>')}</p>`:''}<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn p" onclick="closeModal();loadRoster()">好的</button></div>`) }catch(e){toast(e.message,'err')} }
+async function loadPending(){
+  const p=await api('/api/pending'); const box=$('#pendingBox');
+  if(!p.length){box.innerHTML='';return}
+  box.innerHTML=`<div class="card" style="border:2px solid var(--y)"><h2>待指认（${p.length} 张）</h2><p class="hint">程序没认出这些照片是谁，请选择。不是本班孩子的可以直接丢弃。</p><div class="thumbs">${p.map((x,i)=>`<div style="width:130px"><div class="th" style="width:130px;height:130px"><img src="/api/file?path=${encodeURIComponent(x.temp)}"></div><select class="inp" style="padding:5px 8px;font-size:13px;margin-top:6px" onchange="assignPending('${esc(x.temp).replace(/\\/g,'\\\\')}',this.value)"><option value="">是谁？</option>${S.students.map(s=>`<option value="${s.student_id}">${s.name}</option>`).join('')}<option value="-1">丢弃</option></select></div>`).join('')}</div></div>`;
+}
+async function assignPending(temp,v){ if(!v) return; if(v==='-1'){ await api('/api/pending?temp='+encodeURIComponent(temp),{method:'DELETE'}); } else { await api('/api/assign',{method:'POST',json:{temp:temp,student_id:+v}}); toast('已归档到 '+stName(+v),'ok'); } loadRoster(); }
+
+/* ---------------- 历史 ---------------- */
+async function loadHistory(){ if(!S.cls) return; await loadTrash(); const l=await api('/api/batches?class_id='+S.cls.class_id); $('#histList').innerHTML=l.map(b=>`<div class="li"><b>批次 #${b.id}</b><span class="hint">${fmtDate(b.created_at)}</span>${b.note?`<span class="pill">${esc(b.note)}</span>`:''}<span class="grow"></span><span class="pill">${b.n} 张</span><span class="pill g">${b.published} 已发布</span><button class="btn sm" onclick="openBatch(${b.id})">打开</button><button class="btn sm" onclick="exportBatch(${b.id})">⤓ 导出 Word</button><button class="btn sm d" onclick="delBatch(${b.id})">删除</button></div>`).join('')||'<p class="hint">还没有批次</p>'; }
+async function delBatch(id){
+  if(!confirm('将这个批次移入本机回收站？已发布到幼师口袋的记录不受影响，可在本页恢复。')) return;
+  try{
+    if(S.batch&&S.batch.id===id) await flushItemEdits(S.batch.items.map(i=>i.id));
+    await api('/api/batch/'+id,{method:'DELETE'});
+    if(S.batch&&S.batch.id===id){ clearInterval(S.poll); S.batch=null; $('#batchView').innerHTML=''; }
+    toast('已移入回收站，网站记录不受影响','ok'); await loadHistory();
+  }catch(e){ toast(e.message,'err'); }
+}
+async function loadTrash(){
+  if(!S.cls) return;
+  const cls=S.cls.class_id;
+  try{
+    const rows=await api('/api/trash?class_id='+cls);
+    if(!S.cls||S.cls.class_id!==cls) return;
+    $('#trashList').innerHTML=rows.map(r=>`<div class="li"><b>${r.kind==='batch'?'批次':'记录'} #${r.batch_id}</b><span class="hint">${fmtDate(r.deleted_at)} 删除</span><span>${r.count} 条 · ${esc(r.names||r.note)}</span><span class="grow"></span><button class="btn sm" onclick="restoreTrash(${r.id})">恢复到历史批次</button></div>`).join('')||'<p class="hint">暂无可恢复的记录（仅显示本机 1.4.4 起保留的删除副本）</p>';
+  }catch(e){ $('#trashList').textContent='回收站读取失败：'+e.message; }
+}
+async function restoreTrash(id){
+  try{
+    const r=await api('/api/trash/'+id+'/restore',{method:'POST'});
+    toast(r.missing_photos?`文字和指标已恢复，${r.missing_photos} 个照片文件缺失，请检查备份。`:'已恢复本地记录，网站记录没有变化',r.missing_photos?'err':'ok');
+    await loadHistory();
+    if(S.batch&&S.batch.id===r.batch_id) await refreshBatch(r.batch_id);
+  }catch(e){ toast(e.message,'err'); }
+}
+
+/* ---------------- 设置 ---------------- */
+async function loadStyle(){
+  try{ S.style=await api('/api/style'); }catch(e){ S.style={}; }
+  loadStyleFiles();
+  const box=$('#styleBox'); if(!box) return;
+  const p=S.style||{};
+  if(!p.card){ box.innerHTML='还没有学习过。点右下角「学习我的写作风格」，大约 1~2 分钟。'; return; }
+  const c=p.card;
+  box.innerHTML=`<span class="pill ${p.on?'g':'y'}">${p.on?'已启用':'已停用'}</span>
+    <span class="pill">读了 ${p.mine||p.samples||0} 条你写的记录</span>
+    ${p.skipped_others?`<span class="pill">同班另一位老师的 ${p.skipped_others} 条已跳过</span>`:''}
+    ${p.file_chunks?`<span class="pill b">含你传的 ${(p.files||[]).length} 份范文</span>`:''}
+    <div style="margin-top:8px;color:var(--fg)">${esc(c['一句话概括']||'')}</div>`;
+}
+function renderSettings(){
+  const s=S.status||{};CommunitySettings.load();CommunityResources.load();
+  if(s.logged_in){loadStyle();loadAiMode();}else{$('#styleBox').textContent='登录自己的幼师口袋账号后，可以学习历史写作风格。';}
+  $('#setLogin').textContent=s.logged_in?`已登录：${s.user.name}`:'未登录';
+  $('#btnRelogin').textContent=s.logged_in?'登录状态不对？重登一次':'登录幼师口袋';$('#btnLogout').disabled=!s.logged_in;
+  $('#setClass').textContent=S.cls?`${S.cls.name}（${CLASS_LABEL[S.cls.level]||'未确认班型'}）`:'未选择';
+  $('#yskSiteAccount').textContent=s.logged_in?`当前账号：${s.user.name}${S.cls?' · '+S.cls.name:''}`:'请先登录幼师口袋';$('#btnYskSite').disabled=yskSiteOpening||!s.logged_in;
+}
+async function loadAiMode(){
+  let d; try{ d=await api('/api/ai/mode'); }catch(e){ return; }
+  const mark=()=>{
+    ['fast','deep'].forEach(k=>{
+      const box=$(k==='fast'?'#pkFast':'#pkDeep'); if(!box) return;
+      const on=(d.mode===k);
+      box.querySelector('input').checked=on;
+      box.style.borderColor = on ? 'var(--g)' : 'var(--line)';
+      box.style.background  = on ? 'var(--g2)' : 'transparent';
+    });
+  };
+  mark();
+  ['fast','deep'].forEach(k=>{
+    const box=$(k==='fast'?'#pkFast':'#pkDeep'); if(!box) return;
+    box.onclick=async()=>{
+      if(d.mode===k) return;
+      const was=d.mode; d.mode=k; mark();
+      try{ await api('/api/ai/mode',{method:'POST',json:{mode:k}}); toast(k==='fast'?'好了，之后写得更快':'好了，之后会多琢磨一会儿'); }
+      catch(e){ d.mode=was; mark(); toast('没切过去：'+e.message); }
+    };
+  });
+}
+
+$('#btnRelogin').onclick=()=>S.status&&S.status.logged_in?$('#btnLogout').onclick():needLogin(true); $('#btnPickClass').onclick=pickClass;
+async function finishLogoutBrowser(){
+  const result=hasNative()?await native('logout_browser'):true;
+  if(result!==true){
+    modal(`<h2>账号已退出</h2><p>浏览器里的登录状态还未清理完成，请重试后再登录另一个账号。</p><p class="hint">${esc(result&&result.error?result.error:'桌面程序暂未确认清理完成。')}</p><button class="btn p" onclick="finishLogoutBrowser()">重新清理登录状态</button>`);
+    return;
+  }
+  // 整页重载同时清除轮询、内存草稿和旧账号的异步回调。
+  location.reload();
+}
+$('#btnLogout').onclick=async()=>{
+  if(S.sessionChanging)return;
+  const who=(S.status&&S.status.user&&S.status.user.name)||'当前账号';
+  if(!confirm(`退出「${who}」？\n\n退出之后可以用另一个老师的账号登录，各账号的数据会分别载入。\n照片和名单会保留。`)) return;
+  try{
+    if(itemRewrites.size)throw new Error('还有任务正在处理，请完成后再退出。');
+    if(S.batch)await flushItemEdits(S.batch.items.filter(i=>!['done','publishing','uncertain'].includes(i.publish_status)).map(i=>i.id));
+    await Promise.all(Array.from(itemSaves.values()));
+    S.sessionChanging=true;
+    // 后台忙或拒绝退出时，仍保留原账号的浏览器会话。
+    await api('/api/logout',{method:'POST'});
+  }catch(e){S.sessionChanging=false;return toast(e.message,'err')}
+  S.sessionEpoch++;
+  Album.close();clearObsPreviewUrls();
+  clearInterval(S.poll);
+  S.cls=null;S.status=null;S.batch=null;S.students=[];S.indicators=[];S.realms=[];S.obsFiles=[];S.sel.clear();S.fold.clear();S._plan=null;
+  itemDrafts.clear();itemSaves.clear();itemRewrites.clear();resetOptCache();
+  ['batchView','stuGrid','pendingBox','histList','trashList','obsThumbs','rosterStat'].forEach(id=>{const el=$('#'+id);if(el)el.innerHTML='';});
+  $('#obsNote').value='';
+  $('#whoName').textContent='未登录';$('#whoClass').textContent='';
+  modal('<h2>正在退出</h2><p>正在清理浏览器登录状态…</p>');
+  await finishLogoutBrowser();
+};
+$('#btnFaceTest').onclick=async()=>{ $('#faceStat').textContent='测试中…'; try{ const r=await api('/api/face/test',{method:'POST'}); $('#faceStat').textContent=`连接正常，云端已有 ${r.groups} 个班级人脸库`; toast('人脸服务正常','ok'); }catch(e){ $('#faceStat').textContent='失败：'+e.message; toast(e.message,'err') } };
+
+boot().catch(e=>{go('settings');toast('初始化失败：'+e.message,'err');});
+</script>
+</body>
+</html>
