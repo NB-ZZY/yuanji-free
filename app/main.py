@@ -965,7 +965,7 @@ def selftest() -> int:
     import config
     required = ['fastapi', 'uvicorn', 'requests', 'PIL', 'openpyxl', 'docx']
     missing = [name for name in required if importlib.util.find_spec(name) is None]
-    print('Kidobs Community', config.VERSION)
+    print('Yuanji Free', config.VERSION)
     print('data directory:', config.DATA_DIR)
     print('settings:', 'configured' if config.public_settings()['api_key_set'] else 'needs API key')
     print('dependencies:', ', '.join(missing) if missing else 'OK')
@@ -979,7 +979,7 @@ def main():
     if "--体检" in sys.argv or "--selftest" in sys.argv:
         sys.exit(selftest())
     if not single_instance():
-        msgbox("「幼儿观察助手」已经在运行了。\n请在任务栏里找到它的窗口。")
+        msgbox("「园记自由版」已经在运行了。\n请在任务栏里找到它的窗口。")
         return
 
     _PORT = free_port()

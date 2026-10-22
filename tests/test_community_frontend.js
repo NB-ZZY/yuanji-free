@@ -9,7 +9,7 @@ for(const name of ['community_settings.js','observation_ai.js','knowledge.js'])n
 for(const forbidden of ['ClientPolicy','Payment','policy-locked','/api/license','/api/client-policy','/api/update','licPoll','showActivate','PRIVATE_KEY'])assert(!html.includes(forbidden),forbidden+' unexpectedly present');
 for(const id of ['p-write','p-roster','p-history','p-settings','p-notices','btnRelogin','btnLogout','btnYskSite','btnPickClass'])assert(html.includes('id="'+id+'"'),id+' missing');
 for(const id of ['pkFast','pkDeep','aiModeTip'])assert(!html.includes('id="'+id+'"'),'obsolete speed control '+id);
-for(const doc of ['teacher-guide','tencent-face-guide'])assert(html.includes('https://github.com/NB-ZZY/kidobs-community/blob/main/docs/'+doc+'.md'),'missing guide link '+doc);
+for(const doc of ['teacher-guide','tencent-face-guide'])assert(html.includes('https://github.com/NB-ZZY/yuanji-free/blob/main/docs/'+doc+'.md'),'missing guide link '+doc);
 const goSource=html.match(/function go\(p\)\{[\s\S]*?(?=\r?\n\r?\n\/\*)/)[0];
 let renderCount=0,exportCount=0;
 const navContext={S:{sessionChanging:false,status:null},$$:()=>[],renderSettings:()=>renderCount++,showExportDir:()=>exportCount++};

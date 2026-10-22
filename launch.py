@@ -1,4 +1,4 @@
-"""Create a project-local environment, install dependencies, then run Kidobs."""
+"""Create a project-local environment, install dependencies, then run Yuanji Free."""
 from __future__ import annotations
 
 import argparse

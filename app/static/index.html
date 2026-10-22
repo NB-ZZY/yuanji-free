@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>幼儿观察助手 · 社区版</title>
+<title>园记自由版｜基于幼师口袋评价系统开发的开源助手</title>
 <style>
 :root{
   --bg:#f4f6f5;--card:#fff;--ink:#233;--muted:#7a8a86;--line:#e6ebe9;
@@ -24,6 +24,7 @@ aside{width:210px;background:#fff;border-right:1px solid var(--line);display:fle
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 18px}
 .brand .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--g),#8fd8c2);display:grid;place-items:center;color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(92,194,166,.35)}
 .brand b{font-size:16px}.brand small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.brand .tagline{font-size:10px;white-space:nowrap}
 .nav button{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:12px;text-align:left;color:#45605a;transition:transform .35s var(--spring),background .2s}
 .nav button:hover{background:#f1f6f4;transform:translateX(3px)}
 .nav button.on{background:var(--g2);color:var(--g3);font-weight:600}
@@ -167,7 +168,7 @@ kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
 <body>
 <div id="app">
   <aside>
-    <div class="brand"><div class="logo">观</div><div><b>幼儿观察助手</b><small id="ver">v0.1</small></div></div>
+    <div class="brand"><div class="logo">园</div><div><b>园记自由版</b><small class="tagline">基于幼师口袋评价系统</small><small id="ver">v0.1</small></div></div>
     <div class="nav">
       <button data-p="write" class="on"><span class="ic">✎</span>写观察</button>
       <button data-p="roster"><span class="ic">☺</span>花名册·人脸</button>
@@ -177,13 +178,13 @@ kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
     </div>
     <div class="spacer"></div>
     <div class="who"><b id="whoName">未登录</b><span id="whoClass">未选择班级</span>
-      <span class="pill g" style="margin-top:6px;align-self:flex-start">社区版 · MIT</span></div>
+      <span class="pill g" style="margin-top:6px;align-self:flex-start">自由版 · MIT</span></div>
   </aside>
   <main>
     <section class="page notice-page" id="p-notices" aria-labelledby="noticePageTitle">
       <div class="notice-heading">
         <div class="notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1"/></svg></div>
-        <div class="grow"><h1 id="noticePageTitle">通知公告</h1><p>社区版使用说明</p></div>
+        <div class="grow"><h1 id="noticePageTitle">通知公告</h1><p>自由版使用说明</p></div>
 
       </div>
       <div id="noticeContent" aria-live="polite"></div>
@@ -266,8 +267,8 @@ kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
 
     <!-- ===== 设置 ===== -->
     <section class="page" id="p-settings">
-      <h1>设置</h1><p class="sub">社区版免费使用。先配置自己的模型服务，再登录幼师口袋同步班级；照片也可以手动关联幼儿。</p>
-      <p><a class="btn sm" href="https://github.com/NB-ZZY/kidobs-community/blob/main/docs/teacher-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">第一次使用？查看教师入门教程 ↗</a></p>
+      <h1>设置</h1><p class="sub">自由版免费使用。先配置自己的模型服务，再登录幼师口袋同步班级；照片也可以手动关联幼儿。</p>
+      <p><a class="btn sm" href="https://github.com/NB-ZZY/yuanji-free/blob/main/docs/teacher-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">第一次使用？查看教师入门教程 ↗</a></p>
       <div class="card" id="communitySettings"><h2>我的 AI 模型</h2>
         <p class="hint">请求直接发送到你填写的模型服务。API 密钥保存在本机，读取设置时不会显示原值。</p>
         <form id="modelConfigForm" onsubmit="event.preventDefault();CommunitySettings.save()">
@@ -282,7 +283,7 @@ kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
           <p class="hint">留空密钥会保留原配置。不同模型支持的图像输入和思考档位不同，请选择适合照片观察任务的模型。</p>
           <details class="settings-optional"><summary>可选：使用自己的腾讯云人脸识别</summary>
             <p class="hint">默认关闭；不配置也可以整理照片并手动选人。启用后，需取得相应照片使用权限，并由自己的腾讯云账号承担服务费用。</p>
-            <p><a class="btn sm" href="https://github.com/NB-ZZY/kidobs-community/blob/main/docs/tencent-face-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">腾讯云开通与密钥配置教程 ↗</a></p>
+            <p><a class="btn sm" href="https://github.com/NB-ZZY/yuanji-free/blob/main/docs/tencent-face-guide.md" target="_blank" rel="noopener noreferrer" onclick="if(hasNative()){native('open_external',this.href);return false}">腾讯云开通与密钥配置教程 ↗</a></p>
             <label><input type="checkbox" id="cfgFaceEnabled"> 启用人脸识别</label>
             <div class="settings-grid" style="margin-top:12px">
               <label>SecretId<input class="inp" id="cfgTencentId" type="password" autocomplete="new-password" placeholder="留空保留原值"><span id="cfgTencentIdStatus" class="hint"></span></label>
@@ -341,7 +342,7 @@ kbd{background:#eef2f1;border-radius:6px;padding:1px 6px;font-size:12px}
         <p class="hint" style="margin:8px 0 0">托班使用托育体系（24—36个月）；小班→表现行为一，中班→三，大班→五。</p></div>
       <div class="card"><h2>人脸识别服务（腾讯云）</h2>
         <div class="row"><span id="faceStat" class="grow hint">未测试</span><button class="btn" id="btnFaceTest">测试连接</button></div></div>
-      <div class="card"><h2>关于社区版</h2><p class="hint" style="margin:0">版本 <span id="ver2"></span> · NB-ZZY · MIT。社区版自行配置模型服务，使用本机导入的资料；平台指标以当前账号可访问的内容为准。<br>本机数据目录：<span id="communityDataDir">读取中…</span></p></div>
+      <div class="card"><h2>关于园记自由版</h2><p class="hint" style="margin:0">版本 <span id="ver2"></span> · NB-ZZY · MIT。基于幼师口袋评价系统开发的第三方开源助手。自行配置模型服务，使用本机导入的资料；平台指标以当前账号可访问的内容为准。<br>本机数据目录：<span id="communityDataDir">读取中…</span></p></div>
     </section>
   </main>
 </div>
@@ -388,13 +389,13 @@ function go(p){if(S.sessionChanging)return;$$('.nav button').forEach(b=>b.classL
 const Notice={
   open(){this.render();},
   render(){
-    $('#noticeContent').innerHTML='<article class="notice-card"><span class="notice-label">社区版</span><h3>使用自己的模型，保留自己的资料</h3><p>在设置中填写模型服务地址、模型名称和 API 密钥，然后登录自己的幼师口袋账号同步班级。</p><p>观察记录、随手记和发布前的审核由老师决定。人脸识别为可选功能，可以直接手动选择幼儿。</p><p>代码采用 MIT 许可。导入照片和知识资料前，请确认自己有权使用和处理这些内容。</p></article>';
+    $('#noticeContent').innerHTML='<article class="notice-card"><span class="notice-label">自由版</span><h3>使用自己的模型，保留自己的资料</h3><p>在设置中填写模型服务地址、模型名称和 API 密钥，然后登录自己的幼师口袋账号同步班级。</p><p>观察记录、随手记和发布前的审核由老师决定。人脸识别为可选功能，可以直接手动选择幼儿。</p><p>代码采用 MIT 许可。导入照片和知识资料前，请确认自己有权使用和处理这些内容。</p></article>';
   }
 };
 async function boot(){
   S.status=await api('/api/status');
-  $('#ver').textContent='社区版 v'+S.status.version+(S.status.mock?' (演示模式)':''); $('#ver2').textContent=S.status.version;
-  document.title='幼儿观察助手 · 社区版';
+  $('#ver').textContent='自由版 v'+S.status.version+(S.status.mock?' (演示模式)':''); $('#ver2').textContent=S.status.version;
+  document.title='园记自由版｜基于幼师口袋评价系统开发的开源助手';
   await CommunitySettings.load();
   if(!S.status.logged_in){$('#whoName').textContent='未登录';$('#whoClass').textContent='请在设置中登录自己的账号';go('settings');return;}
   if(!S.status.consent)return showConsent(true);
@@ -435,7 +436,7 @@ async function openLoginWindow(){
     }
     await new Promise(resolve=>setTimeout(resolve,100));
   }
-  throw new Error('尚未连接到桌面登录功能。如果当前使用浏览器，请打开“幼儿观察助手”应用后登录；如果已在应用内，请点“自查”并把结果用于排查。');
+  throw new Error('尚未连接到桌面登录功能。如果当前使用浏览器，请打开“园记自由版”应用后登录；如果已在应用内，请点“自查”并把结果用于排查。');
 }
 function needLogin(autoOpen=false){
   modal(`<h2>登录幼师口袋</h2><p>点击下面按钮会打开幼师口袋的登录页，用微信扫码或账号密码登录后，这个窗口会自动关闭。</p>
@@ -525,7 +526,7 @@ async function openYskSite(){
       if(bridge&&typeof bridge.open_ysk_site==='function')break;
       bridge=null;await new Promise(resolve=>setTimeout(resolve,100));
     }
-    if(!bridge)throw new Error('请在“幼儿观察助手”桌面版中使用此功能；软件会沿用自己的登录状态打开官网。');
+    if(!bridge)throw new Error('请在“园记自由版”桌面版中使用此功能；软件会沿用自己的登录状态打开官网。');
     // 原生方法负责身份校验和超时；等待实际结果，避免重复点击另开窗口。
     const r=await bridge.open_ysk_site();
     if(epoch!==S.sessionEpoch||S.sessionChanging)return;

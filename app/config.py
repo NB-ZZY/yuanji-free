@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 APP_NAME = 'kidobs-community'
-APP_TITLE = '幼儿观察助手 · 社区版'
+APP_TITLE = '园记自由版｜基于幼师口袋评价系统开发的开源助手'
 VERSION = '1.7.5'
 BASE_DIR = Path(sys._MEIPASS) if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / 'static'

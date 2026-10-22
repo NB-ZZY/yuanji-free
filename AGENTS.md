@@ -1,6 +1,7 @@
-# Kidobs Community
+# 园记自由版 / Yuanji Free
 
-This repository is the standalone community edition. Keep it independent of any
+This repository is Yuanji Free, an independently developed third-party open-source
+assistant built for the Youshikoudai evaluation system. Keep it independent of any
 private activation service, payment backend, signing key or release server.
 
 ## Run
