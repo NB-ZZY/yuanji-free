@@ -21,6 +21,7 @@ import roster
 import session_state
 import class_album
 import access_guard
+import local_security
 from secrets import token_urlsafe
 from config import APP_TITLE, MOCK, STATIC_DIR, VERSION, YSK_BASE
 from knowledge import (class_type_to_level, domains, indicator_lines, load_indicators,
@@ -234,15 +235,9 @@ def item_ai_progress(iid: int):
 async def _gate(request, call_next):
     """Keep browser-origin and account-generation boundaries without license gates."""
     global _resource_importing
-    from urllib.parse import urlsplit
-    host = request.url.hostname
-    if host not in ('127.0.0.1', 'localhost', '::1', 'testserver'):
-        return JSONResponse({'error': '仅允许从本机访问。'}, status_code=403)
-    origin = request.headers.get('origin')
-    if origin:
-        parsed = urlsplit(origin)
-        if parsed.netloc != request.url.netloc or parsed.scheme != request.url.scheme:
-            return JSONResponse({'error': '不允许其他网站访问本机程序。'}, status_code=403)
+    denied = local_security.reject(request)
+    if denied is not None:
+        return denied
     path = request.url.path
     # Exact local setup routes: adding a similarly named API cannot expose account data.
     free = path in ('/api/status', '/api/selfcheck', '/api/consent', '/api/community/settings',
@@ -283,7 +278,11 @@ async def _gate(request, call_next):
                 await run_in_threadpool(access_guard.authorize, path, dict(request.query_params), body, _ysk)
             except HTTPException as exc:
                 return JSONResponse({'error': str(exc.detail)}, status_code=exc.status_code)
-        return await call_next(request)
+        response = await call_next(request)
+        if path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
     finally:
         if tracked:
             with session_state.lock:

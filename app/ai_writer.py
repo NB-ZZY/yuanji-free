@@ -176,7 +176,7 @@ def _img_parts(image_path) -> list:
         try:
             out.append({"type": "image_url", "image_url": {"url": _img_b64(p)}})
         except Exception as e:
-            log.warning("第 %d 张图读不了：%s", i + 1, e)
+            log.warning("第 %d 张图读不了（%s）", i + 1, type(e).__name__)
     return out
 
 
@@ -355,11 +355,11 @@ def _chat_full(messages: list, max_tokens: int = 4000, temperature: float = 0.8,
                 continue
             break
         if r.status_code != 200:
-            try:
-                msg = r.json().get('error', {}).get('message')
-            except Exception:
-                msg = r.text[:200]
-            raise RuntimeError(f"写作接口错误 {r.status_code}：{msg}")
+            # Provider errors can echo prompts or credentials; retain only safe status metadata.
+            hint = {400: "请检查模型与请求设置", 401: "请检查 API 密钥",
+                    403: "请检查模型服务权限", 404: "请检查接口地址和模型名称",
+                    429: "请求频繁或额度不足，请稍后重试"}.get(r.status_code, "模型服务暂时不可用，请稍后重试")
+            raise RuntimeError(f"写作接口错误 {r.status_code}：{hint}")
         j = _read_chat_response(r, streaming, token)
     except Exception:
         ai_progress.end_request(token, ok=False)
@@ -714,7 +714,7 @@ def _validate(out: dict, level: int, picks=None, require_text: bool = True) -> d
     if picks is not None:
         picked = picks
     if not picked and picks is None and not explicit_empty:
-        raise ValueError(f"模型选择的指标不在知识库中：{out.get('indicators') or out.get('indicator_name')}")
+        raise ValueError("模型选择的指标不在知识库中，请重新生成")
     text = _clean_text(out.get("text")) if require_text else ""
     first = picked[0] if picked else {"indicator_id": None, "indicator_name": "", "domain": "",
                                      "medal_id": None, "behavior_line": ""}
@@ -789,7 +789,7 @@ def pick_indicators(image_path, child_name: str, level: int, teacher_note: str =
             return _validate({"indicators": out.get("indicators")}, level, require_text=False)["indicators"]
         except Exception as e:
             last = e
-            log.warning("挑指标失败（预算 %d）：%s", budget, e)
+            log.warning("挑指标失败（预算 %d，%s）", budget, type(e).__name__)
     raise RuntimeError(f"指标匹配失败：{last}")
 
 
@@ -852,9 +852,9 @@ def write_observation(image_path, child_name: str, level: int, teacher_note: str
             return res
         except Exception as e:
             last_err = e
-            # 把模型到底吐了什么记下来 —— 只记开头，够看出是断了还是引号坏了
-            log.warning("AI 第 %d 次失败：%s；模型原文开头：%s", attempt + 1, e,
-                        re.sub(r"\s+", " ", (locals().get("raw") or ""))[:200])
+            # Log diagnostics only: drafts and exception messages can contain child data.
+            log.warning("AI 第 %d 次失败（%s，输出 %d 字符）", attempt + 1, type(e).__name__,
+                        len(locals().get("raw") or ""))
     raise RuntimeError(f"AI 生成失败：{last_err}")
 
 
@@ -898,5 +898,5 @@ def rewrite_text(child_name: str, level: int, indicator_name: str, behavior_line
             return _check_text(raw, references, [child_name, call_name] + (children or []))
         except Exception as e:
             last_err = e
-            log.warning("重写评价未通过：%s", e)
+            log.warning("重写评价未通过（%s）", type(e).__name__)
     raise RuntimeError(f"重写未完成，已保留原文：{last_err}")

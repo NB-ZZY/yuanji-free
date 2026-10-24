@@ -5,6 +5,7 @@
 import hashlib
 import json
 import logging
+import threading
 import time
 from session_state import AccountExecutor as ThreadPoolExecutor
 from pathlib import Path
@@ -31,6 +32,42 @@ _pool = ThreadPoolExecutor(max_workers=6)
 _face_pool = ThreadPoolExecutor(max_workers=4)  # 认脸：单独一个池，不会被写作占满
 _aux_pool = ThreadPoolExecutor(max_workers=8)   # 写作过程里派出去的小活（比如一边写实录一边挑指标）
 
+_face_inflight = {}
+_face_lock = threading.RLock()
+
+
+def _queue_recognition(it: dict, class_id: int, students: dict, initial: bool = False):
+    """Share one queued/running recognition per item, including initial batches."""
+    iid = it['id']
+    with _face_lock:
+        existing = _face_inflight.get(iid)
+        if existing is not None:
+            return existing, False
+        it = db.one('SELECT * FROM items WHERE id=?', (iid,))
+        if not it:
+            raise ValueError('这张照片不在了')
+        # A manual scan may finish before its delayed initial coordinator runs.
+        if initial and it.get('face_status') not in (None, 'pending'):
+            return None, False
+        previous = {key: it.get(key) for key in ('face_status', 'ai_error')}
+        db.update_item(iid, face_status='pending', ai_error=None)
+        try:
+            future = _face_pool.submit(_recognize, it, class_id, students)
+        except BaseException:
+            db.update_item(iid, **previous)
+            raise
+        _face_inflight[iid] = future
+
+        def finished(done):
+            # Futures also invoke callbacks on failure or cancellation. Do not use
+            # persisted pending as a lock: a restarted process must allow retries.
+            with _face_lock:
+                if _face_inflight.get(iid) is done:
+                    del _face_inflight[iid]
+
+        future.add_done_callback(finished)
+        return future, True
+
 
 def create_batch(class_id: int, files: list[tuple[str, bytes]], note: str = "", record_date: str = "",
                  mode: str = "simple", length: str = "normal", brief: dict = None) -> int:
@@ -56,7 +93,7 @@ def create_batch(class_id: int, files: list[tuple[str, bytes]], note: str = "", 
         # 老师那段话已经在上传前解析好了，先存着；认完脸再按孩子分下去
         import brief as brief_mod
         brief_mod.save(bid, brief)
-    _face_pool.submit(_process_batch, bid)
+    _aux_pool.submit(_process_batch, bid)
     return bid
 
 
@@ -68,7 +105,11 @@ def _process_batch(bid: int):
         level = cls["level"] if cls else 5
         students = {s["student_id"]: s for s in db.students_of(batch["class_id"])}
         # 并行认脸：一张一张排队太慢，一张网络不好会拖住后面所有的
-        futs = [_face_pool.submit(_recognize, it, batch["class_id"], students) for it in items]
+        futs = []
+        for it in items:
+            future, _ = _queue_recognition(it, batch["class_id"], students, initial=True)
+            if future is not None:
+                futs.append(future)
         for f in futs:
             try:
                 f.result(timeout=120)
@@ -543,10 +584,8 @@ def rescan(item_id: int) -> dict:
         raise ValueError("这张照片不在了")
     b = db.one("SELECT class_id FROM batches WHERE id=?", (it["batch_id"],))
     students = {s["student_id"]: s for s in db.students_of(b["class_id"])}
-    db.update_item(item_id, face_status="pending", ai_error=None)
-    _face_pool.submit(_recognize, db.one("SELECT * FROM items WHERE id=?", (item_id,)),
-                      b["class_id"], students)
-    return {"ok": True}
+    _, started = _queue_recognition(it, b["class_id"], students)
+    return {"ok": True, "started": started}
 
 
 def rescan_batch(batch_id: int) -> int:
@@ -555,10 +594,7 @@ def rescan_batch(batch_id: int) -> int:
                       AND (student_id IS NULL OR face_status IN ('error','noface','pending'))""", (batch_id,))
     b = db.one("SELECT class_id FROM batches WHERE id=?", (batch_id,))
     students = {s["student_id"]: s for s in db.students_of(b["class_id"])}
-    for it in rows:
-        db.update_item(it["id"], face_status="pending", ai_error=None)
-        _face_pool.submit(_recognize, it, b["class_id"], students)
-    return len(rows)
+    return sum(_queue_recognition(it, b["class_id"], students)[1] for it in rows)
 
 
 def clear_batch(batch_id: int, ysk=None) -> dict:
