@@ -34,7 +34,7 @@ def authorized_classes(client):
 
 
 def _identity(value):
-    if isinstance(value, bool) or not isinstance(value, (int, str)) or not str(value).isdigit() or int(value) < 1:
+    if isinstance(value, bool) or not isinstance(value, (int, str)) or not re.fullmatch(r'[0-9]+', str(value)) or int(value) < 1:
         raise HTTPException(400, '资料编号格式不正确。')
     return int(value)
 
@@ -121,10 +121,12 @@ def media_path(path, client):
 
 def authorize(path, query, body, client):
     """Validate IDs before handlers perform any mutation, including JSON secondary IDs."""
-    match = re.match(r'^/api/(class|student|photo|candidate|batch|item|trash)/(\d+)(?:/|$)', path)
+    # Match every path spelling before validating it: FastAPI also accepts +3,
+    # 3.0 and whitespace as integers, which must not skip this authorization.
+    match = re.match(r'^/api/(class|student|photo|candidate|batch|item|trash)/([^/]+)(?:/|$)', path)
     kind, identity, class_id = None, None, None
     if match:
-        kind, identity = match[1], int(match[2])
+        kind, identity = match[1], _identity(match[2])
         class_id = require_class(identity if kind == 'class' else object_class(kind, identity), client)
     if path in ('/api/batches', '/api/trash') and query.get('class_id') is not None:
         require_class(query['class_id'], client)

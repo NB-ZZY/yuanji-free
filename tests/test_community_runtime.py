@@ -327,6 +327,24 @@ class CommunityRuntimeTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['text'], 'Own update allowed')
 
+    def test_noncanonical_path_ids_cannot_skip_account_permissions(self):
+        own, other = self._scoped_fixture()
+        routes = (('class', other['cid'], '/students'), ('student', other['sid'], '/cover'),
+                  ('photo', other['pid'], ''), ('batch', other['bid'], ''),
+                  ('item', other['iid'], '/image'), ('candidate', other['candidate'], ''),
+                  ('trash', other['trash'], '/restore'))
+        for kind, identity, suffix in routes:
+            for spelling in ('+' + str(identity), ' ' + str(identity) + ' ',
+                             str(identity) + '.0', str(identity) + '_0'):
+                with self.subTest(kind=kind, spelling=spelling):
+                    response = self.api.request('POST' if kind == 'trash' else 'GET',
+                                                f'/api/{kind}/{spelling}{suffix}')
+                    self.assertEqual(response.status_code, 400)
+        before = db.one('SELECT nickname FROM students WHERE student_id=?', (other['sid'],))
+        response = self.api.post(f"/api/student/+{other['sid']}/nickname", json={'nickname': 'must not change'})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(db.one('SELECT nickname FROM students WHERE student_id=?', (other['sid'],)), before)
+
     def test_preview_cannot_read_keys_and_pending_jobs_exports_are_account_scoped(self):
         import plat
         import roster
